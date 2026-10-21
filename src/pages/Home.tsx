@@ -12,6 +12,7 @@ import {
 import { db } from "../../js/lib/db.js";
 import HeroExperience from "../components/HeroExperience";
 import ClinicCard from "../components/ClinicCard";
+import ImmersiveStory from "../components/ImmersiveStory";
 import Journey from "../components/Journey";
 import Bot from "../components/Bot";
 import type { Clinic, Session } from "../types";
@@ -115,7 +116,7 @@ export default function Home({ session }: { session: Session | null }) {
             onClick={(event) => {
               event.preventDefault();
               document
-                .getElementById("jornada")
+                .getElementById("jornada-imersiva")
                 ?.scrollIntoView({
                   behavior: matchMedia("(prefers-reduced-motion: reduce)")
                     .matches
@@ -145,6 +146,7 @@ export default function Home({ session }: { session: Session | null }) {
           </p>
         </div>
       </section>
+      <ImmersiveStory />
       <Journey />
       <section
         className="v-section v-discover"

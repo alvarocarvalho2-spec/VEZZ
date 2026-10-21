@@ -88,12 +88,7 @@ export default function HeroExperience() {
     const connection = (
       navigator as Navigator & { connection?: { saveData?: boolean } }
     ).connection;
-    if (
-      reduce ||
-      connection?.saveData ||
-      !matchMedia("(min-width: 768px)").matches
-    )
-      return;
+    if (reduce || connection?.saveData) return;
     const timer = window.setTimeout(() => {
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("webgl2");

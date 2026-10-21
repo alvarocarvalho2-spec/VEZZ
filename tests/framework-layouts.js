@@ -161,7 +161,7 @@ async (page) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.reload();
-  await page.locator("canvas").waitFor();
+  await page.locator(".v-experience canvas").waitFor();
   assert(
     (await page.locator(".v-experience.is-active").count()) === 1,
     "3D inactive",
@@ -177,15 +177,43 @@ async (page) => {
     .getByRole("button", { name: "Retomar movimento", exact: true })
     .click();
   results.push("3D scene loads, pauses and resumes");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(250);
   await page.screenshot({ path: "output/playwright/framework-3d-desktop.png" });
+  await page.locator(".v-odyssey-chapter").first().evaluate((element) =>
+    element.scrollIntoView({ block: "center", behavior: "instant" }),
+  );
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: "output/playwright/framework-3d-story-desktop.png" });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
   await page.locator("#hero-title").waitFor();
   assert(
-    (await page.locator("canvas").count()) === 0,
+    (await page.locator(".v-experience canvas, .v-odyssey-stage canvas").count()) === 0,
     "Reduced motion loaded 3D",
   );
   results.push("reduced motion uses light fallback");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.reload();
+  await page.locator(".v-odyssey-stage canvas").waitFor();
+  assert(
+    (await page.locator(".v-experience canvas, .v-odyssey-stage canvas").count()) === 2,
+    "Mobile did not load both 3D scenes",
+  );
+  await page.locator(".v-odyssey-chapter").nth(1).evaluate((element) =>
+    element.scrollIntoView({ block: "center", behavior: "instant" }),
+  );
+  await page.waitForFunction(() =>
+    document.querySelector(".v-odyssey-chapter.is-current h2")?.textContent.includes("Um horário"),
+  );
+  await page.waitForTimeout(900);
+  assert(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    "Mobile immersive story overflows horizontally",
+  );
+  await page.screenshot({ path: "output/playwright/framework-3d-mobile.png" });
+  results.push("mobile keeps both 3D scenes, scroll chapters and fits the viewport");
   await page.evaluate(() => document.querySelector(".skip").click());
   assert(
     await page.evaluate(() => document.activeElement.tagName === "MAIN"),

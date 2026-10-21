@@ -79,7 +79,7 @@ export default function OrbitScene({
   return (
     <Canvas
       className="v-orbit-canvas"
-      dpr={[1, 1.5]}
+      dpr={[0.8, 1.25]}
       camera={{ position: [0, 1.3, 6.2], fov: 43 }}
       frameloop={active ? "always" : "demand"}
       gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
