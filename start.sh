@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
-# Sobe o VEZZ em http://localhost:8080 (sem cache, para o preview sempre atualizar)
+# Sobe o VEZZ com dados locais em http://127.0.0.1:5173
 cd "$(dirname "$0")" || exit 1
-exec python3 serve.py
+exec npm run dev:local
