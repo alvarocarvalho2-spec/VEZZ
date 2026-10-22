@@ -94,6 +94,18 @@ async (page) => {
           fit.document <= fit.viewport && fit.body <= fit.viewport,
           hash + " overflow " + width + ": " + JSON.stringify(fit),
         );
+        const mascots = await page.evaluate(() =>
+          [...document.querySelectorAll(".v-legacy svg.bot")].map((bot) => {
+            const { width, height } = bot.getBoundingClientRect();
+            return { width, height };
+          }),
+        );
+        assert(
+          mascots.every(({ width, height }) =>
+            width <= 200 && height <= 200 && Math.abs(width - height) < 1,
+          ),
+          hash + " mascot sizing " + width + ": " + JSON.stringify(mascots),
+        );
         results.push(hash + " fits " + width + "x" + height);
       }
       await page.addScriptTag({ url: base + "/output/playwright/axe.min.js" });
@@ -158,6 +170,46 @@ async (page) => {
     "Escape focus",
   );
   results.push("mobile menu keyboard and Escape");
+  for (const width of [320, 375, 768, 1440]) {
+    await page.setViewportSize({ width, height: 820 });
+    await page.evaluate(async () => {
+      const { modal, toast } = await import("/js/lib/ui.js");
+      window.__mascotDialog = modal({
+        title: "Mensagem de teste",
+        body: "Conteúdo local para verificar o tamanho do mascote no modal.",
+        actions: "",
+      });
+      toast("O mascote continua dentro dos limites do aviso.", "warn");
+    });
+    await page.locator(".modal-notices .toast-mascot .bot").waitFor();
+    const modalFit = await page.evaluate(() => {
+      const modal = document.querySelector(".modal");
+      const toast = document.querySelector(".modal-notices .toast");
+      const bot = document.querySelector(".modal-brand .bot");
+      const toastBot = document.querySelector(".modal-notices .toast-mascot .bot");
+      const within = (child, parent) => {
+        const c = child.getBoundingClientRect(), p = parent.getBoundingClientRect();
+        return c.left >= p.left - 1 && c.right <= p.right + 1 && c.top >= p.top - 1 && c.bottom <= p.bottom + 1;
+      };
+      return {
+        viewport: innerWidth,
+        document: document.documentElement.scrollWidth,
+        modal: modal.scrollWidth <= modal.clientWidth,
+        toast: toast.scrollWidth <= toast.clientWidth,
+        modalBot: within(bot, document.querySelector(".modal-brand > [aria-hidden='true']")),
+        toastBot: within(toastBot, document.querySelector(".toast-mascot")),
+      };
+    });
+    assert(
+      modalFit.document <= width && modalFit.modal && modalFit.toast && modalFit.modalBot && modalFit.toastBot,
+      "mascot overflow in modal/toast at " + width + ": " + JSON.stringify(modalFit),
+    );
+    if (width === 320 || width === 1440) {
+      await page.screenshot({ path: `output/playwright/mascot-modal-${width}.png` });
+    }
+    await page.keyboard.press("Escape");
+    results.push("mascot fits modal and toast at " + width);
+  }
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.reload();

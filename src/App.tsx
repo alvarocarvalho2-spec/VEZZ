@@ -112,8 +112,9 @@ export default function App() {
         <motion.div
           key={location.pathname}
           className="v-route"
-          initial={reduce ? false : { opacity: 0, y: 8 }}
+          initial={reduce ? false : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
         >
           <Suspense fallback={<Loading />}>
             <Routes>

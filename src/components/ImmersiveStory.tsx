@@ -80,7 +80,7 @@ export default function ImmersiveStory() {
       </div>
       <div className="v-odyssey-rail" aria-hidden="true">
         <span>Seu cuidado, em movimento</span>
-        <span className="v-odyssey-progress"><i style={{ transform: `scaleX(${(chapter + 1) / chapters.length})` }} /></span>
+        <span className="v-odyssey-progress"><motion.i style={{ scaleX: scrollYProgress }} /></span>
         <span>0{chapter + 1} / 0{chapters.length}</span>
       </div>
       {chapters.map((item, index) => (

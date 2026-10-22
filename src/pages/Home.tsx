@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion, useReducedMotion } from "motion/react";
 import {
   ArrowDown,
   ArrowUpRight,
@@ -19,6 +20,7 @@ import type { Clinic, Session } from "../types";
 
 export default function Home({ session }: { session: Session | null }) {
   const navigate = useNavigate();
+  const reduce = useReducedMotion();
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -47,7 +49,12 @@ export default function Home({ session }: { session: Session | null }) {
     <main className="v-home">
       <section className="v-hero" aria-labelledby="hero-title">
         <div className="v-container v-hero-grid">
-          <div className="v-hero-copy">
+          <motion.div
+            className="v-hero-copy"
+            initial={reduce ? false : { opacity: 0, y: 26 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.82, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+          >
             <div className="v-hero-intro">
               <span className="v-small-dot" />
               Um novo ritmo para o seu cuidado
@@ -106,7 +113,7 @@ export default function Home({ session }: { session: Session | null }) {
               </Link>
               <span>Pesquise sem criar uma conta</span>
             </div>
-          </div>
+          </motion.div>
           <HeroExperience />
         </div>
         <div className="v-container v-hero-bottom">
@@ -130,7 +137,14 @@ export default function Home({ session }: { session: Session | null }) {
           <span className="v-hero-location">Fortaleza, CE</span>
         </div>
       </section>
-      <section className="v-benefits" aria-label="O que o VEZZ faz">
+      <motion.section
+        className="v-benefits"
+        aria-label="O que o VEZZ faz"
+        initial={reduce ? false : { opacity: 0, y: 18 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="v-container">
           <p>
             <CalendarMark />
@@ -145,12 +159,16 @@ export default function Home({ session }: { session: Session | null }) {
             Seu tempo, respeitado.
           </p>
         </div>
-      </section>
+      </motion.section>
       <ImmersiveStory />
       <Journey />
-      <section
+      <motion.section
         className="v-section v-discover"
         aria-labelledby="discover-title"
+        initial={reduce ? false : { opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.12 }}
+        transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="v-container">
           <div className="v-section-heading">
@@ -188,8 +206,14 @@ export default function Home({ session }: { session: Session | null }) {
             </div>
           )}
         </div>
-      </section>
-      <section className="v-for-clinics">
+      </motion.section>
+      <motion.section
+        className="v-for-clinics"
+        initial={reduce ? false : { opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.18 }}
+        transition={{ duration: 0.74, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="v-container v-for-clinics-grid">
           <div className="v-manager-art" aria-hidden="true">
             <Bot expression="cool" />
@@ -234,8 +258,14 @@ export default function Home({ session }: { session: Session | null }) {
             </span>
           </div>
         </div>
-      </section>
-      <section className="v-final-cta v-container">
+      </motion.section>
+      <motion.section
+        className="v-final-cta v-container"
+        initial={reduce ? false : { opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.35 }}
+        transition={{ duration: 0.68, ease: [0.22, 1, 0.36, 1] }}
+      >
         <Bot expression="love" />
         <h2>
           Tem muita vida
@@ -245,7 +275,7 @@ export default function Home({ session }: { session: Session | null }) {
         <Link className="v-button" to="/clinicas">
           Encontre seu próximo cuidado <ArrowUpRight size={20} />
         </Link>
-      </section>
+      </motion.section>
     </main>
   );
 }

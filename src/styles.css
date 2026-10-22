@@ -1724,13 +1724,18 @@ h2:focus {
 .v-legacy .pos-num {
   letter-spacing: -0.07em;
 }
-.v-legacy .reveal {
+.v-legacy .reveal.motion-ready:not(.in) {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+  transition: opacity 560ms var(--v-ease), transform 560ms var(--v-ease);
+  transition-delay: var(--d, 0ms);
+}
+.v-legacy .reveal.motion-ready.in {
   opacity: 1;
   transform: none;
 }
-.v-legacy .bot-float {
-  animation: none;
-}
+.v-legacy .reveal:focus-within { opacity: 1; transform: none; transition-delay: 0ms; }
+.v-legacy .bot-float { animation: v-mascot-float 7s ease-in-out infinite; }
 .v-legacy .nf-bot {
   margin-inline: auto;
 }
@@ -1750,6 +1755,196 @@ h2:focus {
 .toast {
   border-radius: 10px;
   box-shadow: 0 10px 28px #061b4f1c;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 12px;
+  width: min(360px, calc(100vw - 32px));
+  min-width: 0;
+  max-width: 360px;
+  color: #061b4f;
+  background: #fcfcfe;
+  border: 1px solid #cad8ee;
+  border-left: 4px solid #0b3b8f;
+}
+.toast.ok { background: #f1faf6; border-left-color: #18755d; }
+.toast.warn { background: #fff9eb; border-left-color: #9a6511; }
+.toast.danger { background: #fff4f3; border-left-color: #b44538; }
+.toast.out { animation: toastOut 180ms ease forwards; }
+@keyframes toastOut { to { opacity: 0; transform: translateY(8px); } }
+.toast-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.toast-content .feedback-brand {
+  display: block;
+  margin-bottom: 4px;
+  color: #0b3b8f;
+  font-size: 10px;
+}
+.toast-content strong { display: block; font-size: 16px; line-height: 1.2; }
+.toast-content p { margin: 6px 0 0; color: #415574; font-size: 14px; line-height: 1.45; }
+.toast-close { inline-size: 36px; block-size: 36px; min-width: 36px; min-height: 36px; }
+.modal-notices .toast {
+  width: 100%;
+  max-width: 100%;
+}
+.modal-back {
+  padding: 20px;
+  overscroll-behavior: contain;
+  background: #020e30a8;
+}
+.modal {
+  width: min(520px, 100%);
+  max-width: 100%;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid #b5c8eb;
+  border-radius: 22px;
+  background: #fcfcfe;
+  box-shadow: 0 28px 90px #020d2d52;
+}
+.modal-brand-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  color: #fff;
+  background: #061b4f;
+}
+.modal-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.modal-brand .feedback-brand { font-size: 17px; }
+.modal-brand-bar .icon-btn {
+  display: grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  color: #e7f3ff;
+  border-color: #a9c3f54d;
+  background: transparent;
+}
+.modal-brand-bar .icon-btn:hover { background: #ffffff14; }
+.modal-brand-bar :focus-visible { outline-color: #3fe6ff; }
+.modal-content { min-width: 0; padding: clamp(18px, 4vw, 24px); }
+.modal-content h2 {
+  margin: 0 0 16px;
+  font-size: clamp(23px, 4vw, 28px);
+  line-height: 1.15;
+}
+.modal-body { min-width: 0; overflow-wrap: anywhere; }
+.modal-body p { color: #526580; font-size: 15px; }
+.modal-notices { display: grid; gap: 10px; min-width: 0; }
+.modal-notices:empty { display: none; }
+.modal-notices .toast { margin-top: 12px; box-shadow: none; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.modal-actions .btn { min-height: 44px; }
+
+/* Inline mascot SVGs have no intrinsic dimensions. Always size them from the
+   component context so a missing legacy stylesheet can never expand a card. */
+.v-legacy .bot {
+  display: block;
+  inline-size: var(--bot-size, 48px);
+  block-size: var(--bot-size, 48px);
+  max-inline-size: 100%;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+.v-legacy .bot-sm { --bot-size: 40px; }
+.v-legacy .bot-md { --bot-size: clamp(48px, 8vw, 84px); }
+.v-legacy .bot-lg { --bot-size: clamp(64px, 12vw, 132px); }
+.v-legacy .bot-xl { --bot-size: clamp(72px, 16vw, 190px); }
+.v-legacy .brand .bot { --bot-size: 40px; }
+.v-legacy :is(.q-bot, .dash-bot) {
+  display: inline-flex;
+  inline-size: 36px;
+  block-size: 36px;
+  min-inline-size: 0;
+  overflow: hidden;
+  flex: 0 0 36px;
+  line-height: 0;
+  vertical-align: middle;
+}
+.v-legacy :is(.q-bot, .dash-bot) .bot { --bot-size: 36px; }
+.v-legacy .auth-bot {
+  display: grid;
+  place-items: center;
+  inline-size: min(150px, 34vw);
+  block-size: min(150px, 34vw);
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  flex: 0 1 150px;
+  overflow: hidden;
+}
+.v-legacy .auth-bot .bot { --bot-size: 100%; max-inline-size: 100%; }
+.v-legacy .toast-mascot {
+  display: grid;
+  place-items: center;
+  inline-size: 48px;
+  block-size: 48px;
+  min-inline-size: 0;
+  flex: 0 0 48px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #eaf0fb;
+}
+.toast .toast-mascot .bot { --bot-size: 44px; }
+.modal-brand { min-inline-size: 0; }
+.modal-brand > [aria-hidden="true"] {
+  display: grid;
+  place-items: center;
+  inline-size: 42px;
+  block-size: 42px;
+  min-inline-size: 0;
+  flex: 0 0 42px;
+  overflow: hidden;
+}
+.modal-brand .bot { --bot-size: 42px; }
+.v-legacy .empty-bot,
+.v-legacy .nf-bot {
+  display: grid;
+  place-items: center;
+  max-inline-size: min(100%, 120px);
+  min-inline-size: 0;
+  margin-inline: auto;
+  overflow: hidden;
+}
+.v-legacy .empty-bot .bot { --bot-size: min(72px, 24vw); }
+.v-legacy .nf-bot .bot { --bot-size: min(96px, 28vw); }
+.v-legacy .empty { min-inline-size: 0; overflow-wrap: anywhere; }
+.v-legacy :is(.card, .modal, .toast, .auth-visual) :is(.bot, .vezz-bot) { max-inline-size: 100%; }
+@media (max-width: 680px) {
+  .modal-back { padding: 12px; }
+  .modal-content { padding: 20px; }
+  .modal-brand-bar { padding: 12px 16px; }
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-actions .btn { width: 100%; }
+  .toast {
+    grid-template-columns: 42px minmax(0, 1fr) 36px;
+    gap: 8px;
+  }
+  .toast .toast-mascot { inline-size: 42px; block-size: 42px; flex-basis: 42px; }
+  .toast .toast-mascot .bot { --bot-size: 39px; }
+  .modal-brand > [aria-hidden="true"] { inline-size: 38px; block-size: 38px; flex-basis: 38px; }
+  .modal-brand .bot { --bot-size: 38px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-legacy .bot-float { animation: none; }
+  .v-legacy .reveal.motion-ready:not(.in) { opacity: 1; transform: none; transition: none; }
 }
 /* Layout changes follow content constraints, from narrow phones to large displays. */
 @media (min-width: 1500px) {
