@@ -1,95 +1,99 @@
-# VEZZ
+﻿# VEZZ
 
-Plataforma de **gestão de atendimentos e filas** para clínicas e consultórios.
-O app funciona conectado ao **Supabase** (Auth + banco + Edge Function). Sem build — site estático.
+Aplicação de gestão de atendimentos e filas para clínicas, agora com **React, TypeScript e Vite**, navegação com React Router, animações com Motion e experiência 3D com Three.js / React Three Fiber.
 
-**👉 Setup do zero (projeto Supabase novo): [SETUP.md](SETUP.md)**
-Execução local: **[RODAR.md](RODAR.md)**.
+Repositório ativo: **https://github.com/alvarocarvalho2-spec/VEZZ**. O `MVP__VEZZ` permanece como backup; seu remoto local tem push desativado.
 
-Auditoria de funcionamento e segurança: **[relatório de 18/10/2026](docs/AUDITORIA-2026-10-18.md)**.
-Ao atualizar esta versão, aplique a migração de segurança e publique a Edge Function junto do frontend, na ordem documentada no relatório.
+## Começar
 
-Testes adicionais (Node.js 24+ e Chrome instalado): `npm ci`, `npm test`, `npm run test:logic` e `npm run test:browser`. O último inicia seu próprio servidor e bloqueia chamadas para serviços externos. `npm run test:legacy` usa um servidor em `localhost:8080` e sempre executa com dados locais.
-
-## Deploy na Vercel
-
-O projeto já possui `vercel.json`, não depende de build e pode ser publicado como site estático a partir da pasta raiz. **Não precisa de variável de ambiente na Vercel**: a anon key fica no `js/env.js` (é pública por design — a segurança dos dados vem das policies RLS). A `service_role` nunca vai para o frontend nem para a Vercel; só o ambiente da Edge Function tem ela.
-
-## Edge Function do convite
-
-O fluxo de aprovação usa a função `supabase/functions/accept-clinic-invite`. Para publicar no projeto Supabase (guia completo no [SETUP.md](SETUP.md)):
+Requer Node.js 24+ e npm.
 
 ```bash
-supabase login
-supabase link --project-ref <REFERENCE_ID>
-supabase functions deploy accept-clinic-invite --no-verify-jwt
+npm ci
+npm run dev:local
 ```
 
-A função usa a `SUPABASE_SERVICE_ROLE_KEY` apenas no ambiente seguro do Supabase; essa chave não deve ser colocada no frontend ou na Vercel.
+Abra **http://127.0.0.1:5173**. Esse comando usa somente dados locais, mesmo que existam configurações do Supabase no navegador. As alterações ficam no localStorage.
 
-## Execução rápida
+Para usar o backend configurado em `js/env.js`:
 
 ```bash
-cd vezz
-python3 serve.py          # http://localhost:8080
+npm run dev
 ```
 
-Contas de demonstração (senha `demo123`):
+Contas de demonstração **somente no modo local**, senha `demo123`:
 
-| Perfil | E-mail |
-|---|---|
-| Paciente | `ana.silva@email.com` |
-| Gestor | `ricardo@clinicasol.com` |
-| Gestora | `marina@institutovida.com` |
+| Perfil           | E-mail                   |
+| ---------------- | ------------------------ |
+| Paciente         | ana.silva@email.com      |
+| Gestor principal | ricardo@clinicasol.com   |
+| Gestora          | marina@institutovida.com |
 
-## Estrutura
+Veja [RODAR.md](RODAR.md) para desenvolvimento e [SETUP.md](SETUP.md) para o backend.
 
-```
-vezz/
-  index.html            página única (SPA por hash)
-  serve.py              servidor local sem cache (uso em desenvolvimento)
-  start.sh              atalho para o serve.py
-  css/vezz.css          design system (marinho #061b4f + royal #0b3b8f)
-  js/
-    app.js              bootstrap, rotas, sessão
-    config.js           parâmetros (espera média, intervalo de polling, chaves)
-    lib/
-      db.js             adaptadores: local (localStorage) e Supabase
-      seed.js           dados de demonstração de Fortaleza
-      router.js         roteador por hash
-      ui.js             componentes (header, cards, senha, upload de foto)
-      utils.js          datas, máscaras, validações de horário
-      validators.js     CPF, CNPJ, e-mail, telefone, CEP
-    pages/              telas por perfil
-  sql/schema.sql        tabelas, índices, RLS, realtime e trigger da fila
-  assets/               foto da marca, imagens das clínicas, fontes locais
-  docs/REQUISITOS.md    mapa requisito → arquivo
-```
+## Stack e experiência
 
-## Identidade
+- **React + TypeScript + Vite:** componentes, navegação, compilação e módulos separados por página.
+- **React Router:** mantém os links existentes `#/clinicas`, `#/paciente` e `#/gestor`.
+- **Motion:** transições de navegação, menus, troca das prévias e resposta ao ponteiro.
+- **Three.js + React Three Fiber:** cena orbital da home, carregada separadamente. Pausa fora da tela, com a aba oculta ou por controle do usuário. Sem 3D no primeiro carregamento de celulares, economia de dados ou movimento reduzido; o conteúdo continua disponível sem WebGL.
+- **Lucide:** ícones da nova navegação e componentes.
+- **Supabase:** integração, banco, autenticação, políticas e funções existentes preservados.
 
-- Azuis: `#061b4f` (marinho) e `#0b3b8f` (royal)
-- Papel frio `#f2f4f9`, champagne `#c9b07a` como acento
-- Tipografia: Fraunces (títulos), Source Sans 3 (interface), Mokoto (marca)
+Cores `#061b4f` e `#0b3b8f`, fontes locais Source Sans 3 e Mokoto e as dez expressões oficiais do mascote foram mantidas. A prévia do atendimento na home é ilustrativa; a fila real vem da camada de dados.
 
 ## Funcionalidades
 
-**Paciente:** cadastro, login, recuperação de senha, pesquisa de clínicas, agendamento, cancelamento, reagendamento, histórico, fila ao vivo com estimativa de espera.
+**Paciente:** cadastro, login, recuperação de senha, pesquisa de clínicas, detalhes, agendamento, cancelamento, reagendamento, histórico e fila atualizada automaticamente.
 
-**Gestor:** painel do dia, controle de fila (iniciar, finalizar, chamar próximo), agenda, pacientes da clínica, edição dos dados e da foto da clínica.
+**Gestor:** painel diário, iniciar/finalizar/chamar próximo, agenda, pacientes, dados, horários e foto da clínica; acesso de novos gestores pelo responsável principal.
 
-**Regras de horário:** datas passadas não têm grade; horários ocupados ou já ocorridos aparecem riscados e sem clique; um paciente não agenda duas consultas no mesmo dia; só há atendimento no dia da consulta.
+**Administração:** solicitações de clínicas, aprovação, recusa e convite do primeiro gestor.
 
-## Banco de dados
+As regras de disponibilidade, ordenação, permissões e exclusividade continuam na camada de dados e no backend. A migração visual não altera essas regras.
 
+## Estrutura
+
+```text
+src/
+  App.tsx                 inicialização, rotas e aplicação
+  components/             navegação, mascotes, cena 3D e jornada
+  pages/                  Home, Clinics e How nativas em React
+  styles.css              nova identidade e acabamento operacional
+js/
+  pages/                  fluxos operacionais existentes
+  lib/db.js               adaptadores Local / Supabase
+  lib/ui.js               formulários, modais e componentes operacionais
+assets/                   mascotes, fontes e fotos oficiais
+scripts/verify-browser.mjs QA pela CLI Playwright da skill do projeto
 ```
-PACIENTE 1—N CONSULTA N—1 CLINICA
-CLINICA 1—1 ENDERECO
-CLINICA 1—N GESTOR
-CONSULTA 1—1 FILA_ATENDIMENTO
+
+`LegacyPage` integra as telas operacionais à navegação React com guardas, foco, limpeza de polling e renderização serializada. Essas telas receberam a nova identidade e continuam usando seus renderizadores JavaScript; a conversão interna delas para componentes React é uma evolução posterior. O código estático anterior e seus testes históricos permanecem no histórico Git e nos módulos existentes.
+
+## Verificar
+
+```bash
+npm test
+npm run test:logic
+npm run typecheck
+npm run test:browser
+npm run test:production
+npm run build
 ```
 
-Status da consulta: **Agendada → Em Atendimento → Finalizada** (ou **Cancelada**).
-Consultas de hoje entram na fila; a posição e a estimativa (`tempo_medio` × pessoas à frente) são recalculadas para todos.
+Os testes de banco e segurança usam PGlite local. O novo teste de navegador inicia Vite em `127.0.0.1:5174` no modo local, usa o wrapper Bash da skill Playwright e bloqueia conexões externas. Requer Chrome e Git Bash no Windows. Os artefatos ficam em `output/playwright/` (ignorado pelo Git). Os cenários anteriores em `tests/` documentam a versão estática e não são o aceite da nova interface.
 
-Senhas: no modo local usam SHA-256 com salt; com Supabase, o hash do Auth.
+## Build e publicação
+
+```bash
+npm run build
+npm run preview
+```
+
+O build de produção vai para `dist/`; o preview usa **http://127.0.0.1:4173**. Para validar um build isolado de produção, use `npm run build:local` antes do preview. Reexecute `npm run build` para produzir a versão conectada ao Supabase.
+
+Na Vercel, importe **VEZZ**, use `npm run build` e saída `dist` (já em `vercel.json`). Não publique a pasta de fontes diretamente. A política de segurança de scripts continua restrita no build; somente o servidor de desenvolvimento permite o preâmbulo de Fast Refresh.
+
+Nenhuma alteração no banco ou publicação de Edge Function é necessária para esta migração visual. As migrações de segurança já documentadas continuam sendo pré-requisitos do backend existente.
+
+A decisão de stack, limites e verificações estão em [docs/MIGRACAO-IMERSIVA.md](docs/MIGRACAO-IMERSIVA.md).

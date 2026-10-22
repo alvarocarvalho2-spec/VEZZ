@@ -41,6 +41,8 @@ export const STATUS = {
 };
 
 export function getSupabaseConfig() {
+  // The Vite demo build never contacts production, regardless of browser storage.
+  if (typeof __VEZZ_LOCAL__ !== "undefined" && __VEZZ_LOCAL__) return { url: "", anonKey: "" };
   try {
     return VEZZ_ENV.supabaseUrl && VEZZ_ENV.supabaseAnonKey
       ? { url: VEZZ_ENV.supabaseUrl, anonKey: VEZZ_ENV.supabaseAnonKey }

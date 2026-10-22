@@ -136,6 +136,7 @@ function brandMark() {
 }
 
 export function header(session) {
+  if (document.documentElement.dataset.framework === "react") return "";
   const logged = Boolean(session);
   // Painel administrativo (#/admin-vezz) sem atalho na UI: somente por URL.
   const dash = session?.role === "gestor" ? "#/gestor" : session?.role === "admin" ? "#/" : "#/paciente";
@@ -175,6 +176,7 @@ export function header(session) {
 }
 
 export function footer() {
+  if (document.documentElement.dataset.framework === "react") return "";
   return `
     <footer class="site-footer">
       <div class="wrap">
@@ -199,6 +201,7 @@ export function footer() {
 }
 
 export function bottomNav(session, active) {
+  if (document.documentElement.dataset.framework === "react") return "";
   if (!session || session.role === "admin") return "";
   const items =
     session.role === "gestor"

@@ -1,93 +1,54 @@
-# Como rodar o VEZZ no seu computador
+﻿# Rodar o VEZZ
 
-O VEZZ é um site estático (HTML + CSS + JavaScript). Ele não precisa de build nem de instalar dependências: basta servir a pasta por HTTP.
+O frontend usa React + TypeScript + Vite. Use Node.js 24+ e npm; o servidor Python e o Live Server não compilam a aplicação atual.
 
-> Importante: **não abra o `index.html` com duplo clique**. O VEZZ usa módulos ES (`type="module"`), que só funcionam por HTTP. Se abrir como `file://`, a tela fica em “Abrindo a clínica…”.
-
----
-
-## Opção 1 — Python (já vem no Mac e no Linux)
-
-1. Abra o terminal.
-2. Entre na pasta do projeto:
-   ```bash
-   cd caminho/para/vezz
-   ```
-3. Suba o servidor:
-   ```bash
-   python3 serve.py
-   ```
-4. Abra no navegador: **http://localhost:8080**
-
-Para parar: `Ctrl + C` no terminal.
-
-O `serve.py` envia `Cache-Control: no-store`, então o navegador sempre pega a versão atual dos arquivos — sem aquele problema de “abriu como era antes”.
-
-Se preferir o servidor embutido do Python (sem os cabeçalhos de no-cache), também funciona:
+## Desenvolvimento isolado
 
 ```bash
-python3 -m http.server 8080
+npm ci
+npm run dev:local
 ```
 
-## Opção 2 — VS Code (Live Server)
+Abra **http://127.0.0.1:5173**. Não há conexão com Supabase nesse modo, nem gravações de produção. O arquivo `.env.local-demo` define apenas `VEZZ_DATA_MODE=local`; não contém credenciais.
 
-1. Instale a extensão **Live Server**.
-2. Abra a pasta `vezz` no VS Code.
-3. Clique com o botão direito no `index.html` → **Open with Live Server**.
-4. Ele abre sozinho em `http://127.0.0.1:5500`.
+Contas locais, senha `demo123`:
 
-## Opção 3 — Node.js
+- Paciente: `ana.silva@email.com`
+- Gestor da Clínica Sol: `ricardo@clinicasol.com`
+- Gestora do Instituto Vida: `marina@institutovida.com`
+
+Para restaurar os dados, limpe o armazenamento deste endereço no navegador. Não use contas de demonstração no ambiente conectado.
+
+## Desenvolvimento com o backend existente
 
 ```bash
-npx serve -l 8080
+npm run dev
 ```
 
-Ou qualquer outro servidor estático (`http-server`, `live-server`, Nginx, Apache).
+Esse modo usa o Supabase configurado em `js/env.js`. A URL e a chave pública permanecem no frontend. Nunca adicione service role ou outra chave privada ao código. Consulte [SETUP.md](SETUP.md) para configurar um backend novo.
 
----
+## Build e preview
 
-## Entrar no sistema (contas de demonstração)
+```bash
+npm run build:local
+npm run preview
+```
 
-| Perfil | E-mail | Senha |
-|---|---|---|
-| Paciente (já na fila de hoje) | `ana.silva@email.com` | `demo123` |
-| Gestor da Clínica Sol | `ricardo@clinicasol.com` | `demo123` |
-| Gestora do Instituto Vida | `marina@institutovida.com` | `demo123` |
+Abra **http://127.0.0.1:4173** para validar a versão compilada com dados locais. Use `npm run build` para gerar o build conectado ao backend antes da publicação. Não publique um build de demonstração por engano.
 
-Roteiro rápido para testar a fila ao vivo:
+## Verificações
 
-1. Entre como **Ana** em `#/login`. Ela aparece na **posição 1** da Clínica Sol, com Carlos em atendimento.
-2. Em outra aba (ou outro navegador), entre como **Ricardo**.
-3. No painel `#/gestor/fila`, clique **Finalizar atendimento**. A posição da Ana muda sozinha na primeira aba.
+```bash
+npm test
+npm run test:logic
+npm run test:browser
+npm run build
+```
 
-## Restaurar os dados de demonstração
+O teste de navegador usa o wrapper versionado em `.agents/skills/playwright/scripts/playwright_cli.sh`, inicia um servidor local na porta 5174 e bloqueia conexões externas. No Windows, requer Git Bash e Chrome. Evidências em `output/playwright/`.
 
-Os dados ficam no `localStorage` do navegador. Para voltar ao estado inicial:
+## Publicação
 
-- Abra limpe os dados locais do navegador, ou
-- Limpe os dados do site no navegador (DevTools → Application → Clear storage).
+Na Vercel, selecione o repositório **alvarocarvalho2-spec/VEZZ**, comando `npm run build` e diretório `dist`. O `vercel.json` já declara essa configuração e mantém os cabeçalhos de segurança. O hash nas rotas mantém links diretos sem rewrites especiais.
 
----
-
-
-## Publicar na internet
-
-Como é estático, qualquer hospedagem serve:
-
-- **Vercel**: importe a pasta, não precisa de comando de build.
-- **Netlify**: arraste a pasta `vezz` para o painel.
-- **GitHub Pages**: suba o conteúdo e ative o Pages.
-
-O roteamento é por hash (`#/clinicas`), então não é necessário configurar rewrites.
-
----
-
-## Problemas comuns
-
-| Sintoma | Causa | Solução |
-|---|---|---|
-| Tela presa em “Abrindo a clínica…” | Abriu o arquivo direto (`file://`) | Sirva por HTTP (opções acima) |
-| Layout sem estilo | CSS não carregou | Confirme que abriu `http://localhost:8080`, não o arquivo |
-| Continua com aparência antiga | Cache do navegador | `Ctrl + Shift + R` (recarregar sem cache) ou aba anônima |
-| Login não funciona | Dados locais corrompidos | limpe os dados locais do navegador |
-| Porta 8080 ocupada | Outro programa usando | `python3 -m http.server 8090` e use esse endereço |
+O repositório `MVP__VEZZ` é o backup. Não use esse remoto para push.

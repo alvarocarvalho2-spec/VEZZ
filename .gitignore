@@ -7,9 +7,12 @@
 .env
 .env.*
 !.env.example
+!.env.local-demo
 tests/artifacts/
 output/playwright/
 node_modules/
+dist/
+video-vezz/
 .playwright-cli/
 supabase/.temp/
 __pycache__/

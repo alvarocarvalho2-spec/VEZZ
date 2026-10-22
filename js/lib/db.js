@@ -48,6 +48,15 @@ function assertFutureSlot(dateStr, timeStr) {
   }
 }
 
+function imageDataUrlToBlob(dataUrl) {
+  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]*={0,2})$/i.exec(String(dataUrl || ""));
+  if (!match) throw new Error("N\u00e3o foi poss\u00edvel processar a foto da cl\u00ednica.");
+  const binary = atob(match[2]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: match[1].toLowerCase() });
+}
+
 // Conflito de horário detectado no banco (índice único parcial ux_consulta_slot_ativo)
 function isSlotConflict(err) {
   if (!err) return false;
@@ -1064,7 +1073,9 @@ export class SupabaseAdapter {
         id_clinica: clinica.id_clinica,
       },
     });
-    return this.getClinic(clinica.id_clinica);
+    const createdClinic = await this.getClinic(clinica.id_clinica);
+    emit("clinic");
+    return createdClinic;
   }
 
   async updateClinic(id, patch) {
@@ -1078,7 +1089,7 @@ export class SupabaseAdapter {
   // e grava a URL pública em clinica.foto. Só o gestor principal consegue (policy do bucket).
   async uploadClinicPhoto(idClinica, file) {
     const dataUrl = await compressImageFile(file);
-    const blob = await (await fetch(dataUrl)).blob();
+    const blob = imageDataUrlToBlob(dataUrl);
     const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
     const path = `${idClinica}/foto.${ext}`;
     const res = await fetch(`${this.url}/storage/v1/object/fotos-clinicas/${path}`, {
@@ -1088,9 +1099,11 @@ export class SupabaseAdapter {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || data.error || "Falha ao enviar a foto.");
-    const publicUrl = `${this.url}/storage/v1/object/public/fotos-clinicas/${path}`;
-    await this.rest("clinica", { method: "PATCH", body: { foto: publicUrl }, query: { id_clinica: `eq.${idClinica}` } });
-    return publicUrl;
+    const publicUrl = new URL(`${this.url}/storage/v1/object/public/fotos-clinicas/${path}`);
+    publicUrl.searchParams.set("v", String(Date.now()));
+    const photoUrl = publicUrl.toString();
+    this.requireUpdated(await this.rest("clinica", { method: "PATCH", body: { foto: photoUrl }, query: { id_clinica: `eq.${idClinica}` } }));
+    return photoUrl;
   }
 
   async listClinics({ q = "", cidade = "", bairro = "", local = "" } = {}) {

@@ -1,0 +1,33 @@
+async page => {
+  const base='http://127.0.0.1:5174',results=[],external=[];
+  const assert=(value,message)=>{if(!value)throw Error(message);};
+  await page.context().unroute('**/*');
+  await page.context().route('**/*',route=>{const url=new URL(route.request().url());if(url.origin===base||['data:','blob:'].includes(url.protocol))return route.continue();external.push(url.hostname);return route.abort();});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto(base);await page.locator('#hero-title').waitFor();
+  await page.evaluate(()=>localStorage.clear());await page.reload();await page.locator('#hero-title').waitFor();
+  await page.evaluate(async()=>{window.api=(await import('/js/lib/db.js')).db();});
+  assert(await page.evaluate(()=>api.constructor.name==='LocalAdapter'),'Local adapter required');
+  const route=async hash=>{await page.evaluate(hash=>{location.hash=hash;},hash);await page.waitForFunction(hash=>document.querySelector('#app').dataset.route===hash.slice(1).split('?')[0]&&!document.querySelector('#app[aria-busy]')&&document.querySelector('main h1'),hash);};
+  await route('#/solicitar-clinica');
+  const request={nome_clinica:'Clínica Framework QA',cnpj:'11.222.333/0001-81',responsavel:'Responsável Framework',email_responsavel:'clinic-framework@example.test',telefone_responsavel:'85988887777',telefone_clinica:'8532221111',especialidades:'Clínica Geral',rua:'Rua de Teste',numero:'42',bairro:'Aldeota',cidade:'Fortaleza',cep:'60160230',descricao:'Dados locais para validação da migração.'};
+  for(const[name,value]of Object.entries(request))await page.locator('#clinic-request [name='+name+']').fill(value);
+  await page.locator('#clinic-request button').click();await page.locator('#hero-title').waitFor();
+  assert(await page.evaluate(()=>api.listClinicRequests().some(r=>r.nome_clinica==='Clínica Framework QA')),'Request not saved');results.push('clinic request form saves locally');
+  await page.evaluate(()=>api.setSession({role:'admin',nome:'Administrador QA',email:'admin@example.test'}));
+  await route('#/admin-vezz');await page.locator('[data-approve]').first().click();await page.locator('input[aria-label="Convite do responsável"]').waitFor();
+  const invitation=await page.locator('input[aria-label="Convite do responsável"]').inputValue();
+  await route('#/como-funciona');await route('#/admin-vezz');assert(await page.locator('input[aria-label="Convite do responsável"]').inputValue()===invitation,'Invitation lost');results.push('approval creates persistent invitation');
+  await page.evaluate(async()=>{await api.createClinicRequest({nome_clinica:'Clínica Recusada QA',responsavel:'Responsável QA',email_responsavel:'rejected@example.test'});});
+  await route('#/como-funciona');await route('#/admin-vezz');await page.locator('[data-reject]').click();await page.waitForFunction(()=>api.listClinicRequests().some(r=>r.nome_clinica==='Clínica Recusada QA'&&r.status==='Recusada'));results.push('administrator can reject a request');
+  await page.evaluate(async()=>api.signOut());await route(new URL(invitation).hash);
+  await page.locator('#invite-form').waitFor();
+  for(const[name,value]of Object.entries({nome:'Gestor Framework',email:'clinic-framework@example.test',cargo:'Responsável',senha:'Framework123'}))await page.locator('#invite-form [name='+name+']').fill(value);
+  await page.locator('#invite-form button').click();await page.waitForURL('**/#/gestor');await page.locator('.dash-top').waitFor();assert(await page.evaluate(()=>api.getSession().principal),'Principal missing');results.push('invitation creates clinic and first manager');
+  await route('#/gestor/novo-gestor');
+  for(const[name,value]of Object.entries({nome:'Equipe Framework',email:'staff-framework@example.test',cargo:'Recepção',senha:'Framework123'}))await page.locator('#new-manager [name='+name+']').fill(value);
+  await page.locator('#new-manager button').click();await page.waitForURL('**/#/gestor');assert(await page.evaluate(()=>api.getSession().email==='clinic-framework@example.test'),'Principal session replaced');results.push('principal creates staff without replacing session');
+  await page.getByRole('button',{name:'Sair',exact:true}).click();await route('#/login');await page.locator('#login [name=email]').fill('staff-framework@example.test');await page.locator('#login [name=senha]').fill('Framework123');await page.locator('#login button').click();await page.waitForURL('**/#/gestor');await page.evaluate(()=>{location.hash='#/gestor/novo-gestor';});await page.waitForURL('**/#/gestor');results.push('ordinary manager cannot open principal-only screen');
+  assert(external.length===0,'External connections');
+  return {passed:results.length,results,external};
+}
