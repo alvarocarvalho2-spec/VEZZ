@@ -1,7 +1,7 @@
 # VEZZ — Setup do zero (projeto Supabase novo)
 
 Guia completo para criar um projeto Supabase do zero e conectar o app.
-O frontend usa React + TypeScript + Vite. A integração mantém os dados públicos em `js/env.js` (URL + anon key) e `supabase/config.toml` (project_id). Use `npm run dev:local` para demonstração isolada ou `npm run dev` para o backend configurado. O modo local tem uma flag sem credenciais em `.env.local-demo`.
+O app é estático: **só dois arquivos guardam dados do projeto** — `js/env.js` (URL + anon key) e `supabase/config.toml` (project_id). Não precisa de `.env`.
 
 > Ordem recomendada: **cria o projeto novo primeiro, testa tudo, e só apaga o antigo depois.**
 
@@ -65,16 +65,16 @@ npx supabase functions deploy accept-clinic-invite --no-verify-jwt
 
 1. Atualize `js/env.js` com a **Project URL** e a **anon key NOVAS** (único lugar que o app lê — sem `.env`).
 2. O `supabase/config.toml` já foi preenchido pelo `supabase link` (confere o `project_id`).
-3. Limpe os dados do navegador em `http://127.0.0.1:5173`:
+3. Limpe os dados do navegador em `http://localhost:8080`:
    DevTools (F12) → Application → Clear storage → **Clear site data**
    (a sessão antiga guarda um token do projeto velho).
 4. Suba o servidor de novo e force reload:
-   - `npm ci` e `npm run dev` dentro da pasta do projeto
+   - `npx http-server -c-1 -p 8080 .` (ou `python serve.py`) dentro da pasta `vezz`
    - No navegador: **Ctrl+Shift+R**
 
 ## 5. Vercel (se for publicar)
 
-Importe o repositório `alvarocarvalho2-spec/VEZZ`, com build `npm run build` e saída `dist`. A chave pública continua no `js/env.js`; a segurança dos dados vem das policies RLS. Depois de trocar o `env.js`, gere e publique um novo build. Nunca publique a pasta de fontes diretamente. O remoto `MVP__VEZZ` permanece como backup.
+Site estático — **não precisa de variável de ambiente na Vercel**. A anon key fica no `js/env.js` (é pública por design; a segurança dos dados vem das policies RLS). Depois de trocar o `env.js`, publica de novo (push ou upload da pasta).
 
 ## 6. Testar o fluxo completo
 

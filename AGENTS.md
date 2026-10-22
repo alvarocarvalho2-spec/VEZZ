@@ -33,13 +33,8 @@ Antes de executar uma tarefa que se enquadre no escopo abaixo, leia o respectivo
   e filas, azul marinho `#061b4f`, royal `#0b3b8f`, Source Sans 3, marca Mokoto
   e mascotes oficiais. Instruções explícitas do usuário prevalecem sobre
   recomendações genéricas das skills.
-- A migração para React + TypeScript + Vite foi autorizada pelo usuário.
-  Preserve o roteamento por hash com React Router, as regras e adaptadores de
-  `js/lib/db.js` e os fluxos operacionais integrados por `LegacyPage`.
-- Use `npm run dev:local` e `npm run test:browser` nas validações. O modo local
-  isola o Supabase; `npm run dev` usa o backend configurado.
-- O repositório ativo é `alvarocarvalho2-spec/VEZZ`. `MVP__VEZZ` é backup;
-  nunca envie commits para ele.
+- Preserve HTML/CSS/JavaScript com módulos e roteamento por hash, salvo
+  solicitação explícita de mudança de arquitetura.
 - A skill Playwright foi instalada neste repositório, não no diretório global.
   Resolva seu wrapper em `.agents/skills/playwright/scripts/playwright_cli.sh`
   a partir da raiz do projeto; não suponha `$CODEX_HOME/skills/playwright`.
