@@ -1,118 +1,291 @@
-import { useMemo, useRef } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import type { MotionValue } from "motion/react";
-import { Color, Group, MathUtils, Mesh, MeshStandardMaterial } from "three";
+import {
+  AdditiveBlending,
+  CylinderGeometry,
+  Group,
+  InstancedMesh,
+  MathUtils,
+  MeshBasicMaterial,
+  Object3D,
+  Quaternion,
+  SRGBColorSpace,
+  SphereGeometry,
+  TextureLoader,
+  Vector3,
+} from "three";
+import type { MapLocation } from "./ClinicEarth";
 
-const coreStart = new Color("#1e77cd");
-const coreEnd = new Color("#48c7ed");
-const emissiveStart = new Color("#1478ca");
-const emissiveEnd = new Color("#16a8d0");
+const earthTextureUrl = `${import.meta.env.BASE_URL}assets/earth/land_ocean_ice_2048.jpg`;
+const cloudTextureUrl = `${import.meta.env.BASE_URL}assets/earth/cloud_combined_2048.jpg`;
+const earthRadius = 1.25;
+const north = new Vector3(0, 1, 0);
 
-function CareCore({ progress, active }: { progress: MotionValue<number>; active: boolean }) {
-  const core = useRef<Group>(null);
-  const halo = useRef<Mesh>(null);
-  const ring = useRef<Mesh>(null);
-  const orbit = useRef<Group>(null);
-  const material = useRef<MeshStandardMaterial>(null);
-  const { viewport, camera } = useThree();
-  const particles = useMemo(() => {
-    const points = new Float32Array(54 * 3);
-    for (let index = 0; index < 54; index++) {
-      const radius = 2.2 + ((index * 17) % 100) / 100 * 1.5;
-      const angle = index * 2.399;
-      points[index * 3] = Math.cos(angle) * radius;
-      points[index * 3 + 1] = Math.sin(angle * 1.43) * 1.8;
-      points[index * 3 + 2] = Math.sin(angle) * radius * 0.45;
+function latLngToVector(latitude: number, longitude: number, radius: number) {
+  const polar = ((90 - latitude) * Math.PI) / 180;
+  const azimuth = ((longitude + 180) * Math.PI) / 180;
+  return new Vector3(
+    -radius * Math.sin(polar) * Math.cos(azimuth),
+    radius * Math.cos(polar),
+    radius * Math.sin(polar) * Math.sin(azimuth),
+  );
+}
+
+function ClinicPins({ locations }: { locations: MapLocation[] }) {
+  const stems = useRef<InstancedMesh>(null);
+  const lights = useRef<InstancedMesh>(null);
+  const halos = useRef<InstancedMesh>(null);
+  const stemGeometry = useMemo(() => new CylinderGeometry(1, 1, 1, 8), []);
+  const lightGeometry = useMemo(() => new SphereGeometry(1, 12, 12), []);
+  const stemMaterial = useMemo(() => new MeshBasicMaterial({ color: "#85e9ff" }), []);
+  const lightMaterial = useMemo(() => new MeshBasicMaterial({ color: "#fff0bd" }), []);
+  const haloMaterial = useMemo(
+    () => new MeshBasicMaterial({ color: "#ffc86b", transparent: true, opacity: 0.23, depthWrite: false }),
+    [],
+  );
+  const markers = useMemo(
+    () => locations.map((location) => ({
+      surface: latLngToVector(location.latitude, location.longitude, earthRadius + 0.012),
+      size: MathUtils.clamp(0.016 + Math.log2(location.clinics.length + 1) * 0.003, 0.016, 0.032),
+    })),
+    [locations],
+  );
+
+  useLayoutEffect(() => {
+    if (!stems.current || !lights.current || !halos.current) return;
+
+    const stemMesh = stems.current;
+    const lightMesh = lights.current;
+    const haloMesh = halos.current;
+    const helper = new Object3D();
+    const outward = new Quaternion();
+
+    markers.forEach(({ surface, size }, index) => {
+      const direction = surface.clone().normalize();
+      outward.setFromUnitVectors(north, direction);
+
+      helper.position.copy(surface).addScaledVector(direction, 0.034);
+      helper.quaternion.copy(outward);
+      helper.scale.set(0.006, 0.072, 0.006);
+      helper.updateMatrix();
+      stemMesh.setMatrixAt(index, helper.matrix);
+
+      helper.position.copy(surface).addScaledVector(direction, 0.081);
+      helper.quaternion.identity();
+      helper.scale.setScalar(size);
+      helper.updateMatrix();
+      lightMesh.setMatrixAt(index, helper.matrix);
+
+      helper.scale.setScalar(size * 2.6);
+      helper.updateMatrix();
+      haloMesh.setMatrixAt(index, helper.matrix);
+    });
+
+    stemMesh.instanceMatrix.needsUpdate = true;
+    lightMesh.instanceMatrix.needsUpdate = true;
+    haloMesh.instanceMatrix.needsUpdate = true;
+    stemMesh.computeBoundingSphere();
+    lightMesh.computeBoundingSphere();
+    haloMesh.computeBoundingSphere();
+  }, [markers]);
+
+  if (!markers.length) return null;
+
+  return (
+    <>
+      <instancedMesh ref={stems} args={[stemGeometry, stemMaterial, markers.length]} />
+      <instancedMesh ref={halos} args={[lightGeometry, haloMaterial, markers.length]} />
+      <instancedMesh ref={lights} args={[lightGeometry, lightMaterial, markers.length]} />
+    </>
+  );
+}
+
+function Atmosphere() {
+  return (
+    <mesh scale={1.075} renderOrder={3}>
+      <sphereGeometry args={[earthRadius, 72, 72]} />
+      <shaderMaterial
+        transparent
+        depthWrite={false}
+        blending={AdditiveBlending}
+        vertexShader={`
+          varying vec3 vNormal;
+          varying vec3 vViewPosition;
+          void main() {
+            vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+            vNormal = normalize(normalMatrix * normal);
+            vViewPosition = -viewPosition.xyz;
+            gl_Position = projectionMatrix * viewPosition;
+          }
+        `}
+        fragmentShader={`
+          varying vec3 vNormal;
+          varying vec3 vViewPosition;
+          void main() {
+            float rim = pow(1.0 - max(dot(normalize(vNormal), normalize(vViewPosition)), 0.0), 3.2);
+            gl_FragColor = vec4(0.22, 0.58, 1.0, rim * 0.82);
+          }
+        `}
+      />
+    </mesh>
+  );
+}
+
+function Starfield() {
+  const positions = useMemo(() => {
+    const count = 420;
+    const points = new Float32Array(count * 3);
+    for (let index = 0; index < count; index++) {
+      const x = ((index * 127.1) % 997) / 997;
+      const y = ((index * 311.7) % 991) / 991;
+      const z = ((index * 73.3) % 983) / 983;
+      points[index * 3] = (x - 0.5) * 19;
+      points[index * 3 + 1] = (y - 0.5) * 12;
+      points[index * 3 + 2] = -2.5 - z * 7;
     }
     return points;
   }, []);
 
-  useFrame(({ clock }, delta) => {
-    if (!active || !core.current) return;
-    const p = MathUtils.clamp(progress.get(), 0, 1);
-    const mobile = viewport.width < 6;
-    const scene = core.current;
+  return (
+    <points>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial color="#c6e3ff" size={0.018} transparent opacity={0.58} sizeAttenuation />
+    </points>
+  );
+}
 
-    // The camera moves through the scene with the story, while the model drifts
-    // on a separate arc to create a clear sense of depth without scroll-jank.
-    const cameraX = Math.sin(p * Math.PI * 2) * (mobile ? 0.14 : 0.38);
-    const cameraY = Math.sin(p * Math.PI * 2.6) * 0.16;
-    const cameraZ = 7.8 - Math.sin(p * Math.PI) * (mobile ? 0.48 : 1.15);
-    camera.position.x = MathUtils.damp(camera.position.x, cameraX, 2.2, delta);
-    camera.position.y = MathUtils.damp(camera.position.y, cameraY, 2.2, delta);
-    camera.position.z = MathUtils.damp(camera.position.z, cameraZ, 2.2, delta);
+function Earth({
+  progress,
+  locations,
+  active,
+  onReady,
+}: {
+  progress: MotionValue<number>;
+  locations: MapLocation[];
+  active: boolean;
+  onReady: () => void;
+}) {
+  const composition = useRef<Group>(null);
+  const planet = useRef<Group>(null);
+  const clouds = useRef<Group>(null);
+  const [surfaceTexture, cloudTexture] = useLoader(TextureLoader, [earthTextureUrl, cloudTextureUrl]);
+  const { viewport, camera } = useThree();
+  const mobile = viewport.width < 6;
+
+  useEffect(() => {
+    surfaceTexture.colorSpace = SRGBColorSpace;
+    surfaceTexture.anisotropy = 8;
+    cloudTexture.anisotropy = 8;
+    onReady();
+  }, [surfaceTexture, cloudTexture, onReady]);
+
+  useFrame(({ clock }, delta) => {
+    if (!active || !composition.current || !planet.current) return;
+
+    const p = MathUtils.clamp(progress.get(), 0, 1);
+    const cameraX = Math.sin(p * Math.PI * 2) * (mobile ? 0.08 : 0.22);
+    const cameraY = Math.sin(p * Math.PI * 2.3) * 0.1;
+    const cameraZ = 7.05 - Math.sin(p * Math.PI) * (mobile ? 0.52 : 0.9);
+    camera.position.x = MathUtils.damp(camera.position.x, cameraX, 2, delta);
+    camera.position.y = MathUtils.damp(camera.position.y, cameraY, 2, delta);
+    camera.position.z = MathUtils.damp(camera.position.z, cameraZ, 2, delta);
     camera.lookAt(0, 0, 0);
 
-    scene.rotation.y = MathUtils.damp(scene.rotation.y, -0.4 + p * Math.PI * 1.45, 3.2, delta);
-    scene.rotation.x = MathUtils.damp(scene.rotation.x, 0.1 + Math.sin(p * Math.PI * 2) * 0.2, 2.6, delta);
-    scene.position.x = MathUtils.damp(scene.position.x, mobile ? 0.42 : 2.2 - p * 0.8 + Math.sin(p * Math.PI * 2) * 0.32, 2.5, delta);
-    scene.position.y = MathUtils.damp(scene.position.y, (mobile ? -1.05 : 0) + Math.sin(clock.elapsedTime * 0.55) * 0.08 + Math.sin(p * Math.PI * 2) * 0.22, 2.4, delta);
-    scene.position.z = MathUtils.damp(scene.position.z, Math.sin(p * Math.PI * 2) * 0.4, 2.4, delta);
-    const responsiveScale = mobile ? 0.6 : 0.9;
-    scene.scale.setScalar(MathUtils.damp(scene.scale.x, responsiveScale + Math.sin(p * Math.PI) * (mobile ? 0.035 : 0.18), 2.4, delta));
-    if (halo.current) halo.current.rotation.z += delta * 0.12;
-    if (ring.current) ring.current.rotation.x += delta * (0.2 + p * 0.18);
-    if (orbit.current) {
-      orbit.current.rotation.y += delta * (0.15 + p * 0.22);
-      orbit.current.rotation.z = MathUtils.damp(orbit.current.rotation.z, p * Math.PI * 0.7, 1.4, delta);
-    }
-    if (material.current) {
-      material.current.color.copy(coreStart).lerp(coreEnd, p);
-      material.current.emissive.copy(emissiveStart).lerp(emissiveEnd, p);
+    const startX = mobile ? 0.12 : 1.38;
+    const targetX = startX + Math.sin(p * Math.PI * 2) * (mobile ? 0.12 : 0.28) - p * (mobile ? 0.08 : 0.22);
+    const targetY = (mobile ? -1.18 : 0.02) + Math.sin(p * Math.PI * 2) * (mobile ? 0.1 : 0.18);
+    composition.current.position.x = MathUtils.damp(composition.current.position.x, targetX, 2.1, delta);
+    composition.current.position.y = MathUtils.damp(composition.current.position.y, targetY, 2.1, delta);
+    composition.current.position.z = MathUtils.damp(composition.current.position.z, Math.sin(p * Math.PI) * 0.16, 2.1, delta);
+    const baseScale = mobile ? 0.79 : 1.16;
+    const targetScale = baseScale + Math.sin(p * Math.PI) * (mobile ? 0.055 : 0.14);
+    composition.current.scale.setScalar(MathUtils.damp(composition.current.scale.x, targetScale, 2.1, delta));
+
+    planet.current.rotation.y = MathUtils.damp(planet.current.rotation.y, -0.68 + p * 1.52, 1.8, delta);
+    planet.current.rotation.x = MathUtils.damp(planet.current.rotation.x, 0.06 + Math.sin(p * Math.PI * 2) * 0.07, 1.8, delta);
+    if (clouds.current) {
+      clouds.current.rotation.y = MathUtils.damp(
+        clouds.current.rotation.y,
+        p * 0.08 + Math.sin(clock.elapsedTime * 0.12) * 0.008,
+        1.8,
+        delta,
+      );
     }
   });
 
   return (
-    <group ref={core} position={[viewport.width < 6 ? 0.42 : 2.2, viewport.width < 6 ? -1.05 : 0, 0]} scale={viewport.width < 6 ? 0.6 : 0.9}>
-      <mesh>
-        <icosahedronGeometry args={[1.04, 5]} />
-        <meshPhysicalMaterial ref={material} color="#1e77cd" emissive="#1478ca" emissiveIntensity={0.72} roughness={0.2} metalness={0.25} clearcoat={1} clearcoatRoughness={0.1} />
-      </mesh>
-      <mesh ref={halo} scale={1.25}>
-        <sphereGeometry args={[1, 36, 36]} />
-        <meshBasicMaterial color="#55d9ff" transparent opacity={0.075} />
-      </mesh>
-      <mesh ref={ring} rotation={[1.08, 0.24, -0.35]}>
-        <torusGeometry args={[1.72, 0.018, 12, 160]} />
-        <meshStandardMaterial color="#9aeaff" emissive="#2baee7" emissiveIntensity={1.5} metalness={0.6} roughness={0.18} />
-      </mesh>
-      <mesh rotation={[-0.74, 0.1, 0.48]}>
-        <torusGeometry args={[2.04, 0.007, 8, 160]} />
-        <meshBasicMaterial color="#5ca8f2" transparent opacity={0.56} />
-      </mesh>
-      <group ref={orbit}>
-        <mesh position={[-1.7, 0.8, 0.26]}>
-          <octahedronGeometry args={[0.15, 1]} />
-          <meshBasicMaterial color="#c3f7ff" />
+    <group ref={composition} position={[mobile ? 0.12 : 1.38, mobile ? -1.18 : 0.02, 0]} scale={mobile ? 0.79 : 1.16}>
+      <group ref={planet} rotation={[0.04, -0.68, 0.13]}>
+        <mesh>
+          <sphereGeometry args={[earthRadius, 96, 96]} />
+          <meshStandardMaterial map={surfaceTexture} roughness={0.92} metalness={0.015} />
         </mesh>
-        <mesh position={[1.72, -0.88, -0.2]}>
-          <icosahedronGeometry args={[0.1, 1]} />
-          <meshBasicMaterial color="#79d8ff" />
-        </mesh>
+        <group ref={clouds}>
+          <mesh scale={1.009} renderOrder={2}>
+            <sphereGeometry args={[earthRadius, 80, 80]} />
+            <meshBasicMaterial
+              color="#f4faff"
+              alphaMap={cloudTexture}
+              transparent
+              opacity={0.74}
+              alphaTest={0.035}
+              depthWrite={false}
+            />
+          </mesh>
+        </group>
+        <ClinicPins locations={locations} />
+        <Atmosphere />
       </group>
-      <points>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[particles, 3]} />
-        </bufferGeometry>
-        <pointsMaterial color="#6fbaff" size={0.025} transparent opacity={0.74} sizeAttenuation />
-      </points>
     </group>
   );
 }
 
-export default function ScrollScene({ progress, active }: { progress: MotionValue<number>; active: boolean }) {
+function SceneContent({
+  progress,
+  active,
+  locations,
+  onReady,
+}: {
+  progress: MotionValue<number>;
+  active: boolean;
+  locations: MapLocation[];
+  onReady: () => void;
+}) {
+  return (
+    <>
+      <Starfield />
+      <ambientLight intensity={0.48} />
+      <directionalLight position={[4, 2.5, 5]} intensity={2.1} color="#e7f4ff" />
+      <directionalLight position={[-4, -1, -3]} intensity={0.22} color="#2463ac" />
+      <Earth progress={progress} active={active} locations={locations} onReady={onReady} />
+    </>
+  );
+}
+
+export default function ScrollScene({
+  progress,
+  active,
+  locations,
+  onReady,
+}: {
+  progress: MotionValue<number>;
+  active: boolean;
+  locations: MapLocation[];
+  onReady: () => void;
+}) {
   return (
     <Canvas
-      dpr={[0.8, 1.35]}
-      camera={{ position: [0, 0, 7.8], fov: 42 }}
+      dpr={[1, 1.5]}
+      camera={{ position: [0, 0, 7.05], fov: 42 }}
       frameloop={active ? "always" : "demand"}
       gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
     >
-      <ambientLight intensity={1.25} />
-      <pointLight position={[2, 3, 4]} intensity={24} color="#70d9ff" />
-      <pointLight position={[-4, -2, 1]} intensity={10} color="#2b64e8" />
-      <CareCore progress={progress} active={active} />
-      <color attach="background" args={[new Color("#061b4f")]} />
+      <Suspense fallback={null}>
+        <SceneContent progress={progress} active={active} locations={locations} onReady={onReady} />
+      </Suspense>
     </Canvas>
   );
 }

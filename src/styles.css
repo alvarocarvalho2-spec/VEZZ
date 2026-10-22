@@ -3335,6 +3335,8 @@ h2:focus {
 .v-odyssey-stage canvas {
   position: absolute !important;
   inset: 0;
+  z-index: 1;
+  pointer-events: none;
 }
 .v-odyssey-wash,
 .v-odyssey-grain,
@@ -3344,22 +3346,36 @@ h2:focus {
   pointer-events: none;
 }
 .v-odyssey-wash {
+  z-index: 0;
   background:
-    radial-gradient(ellipse at 73% 48%, #1768b86b, transparent 38%),
-    radial-gradient(ellipse at 12% 86%, #0a367b90, transparent 48%),
-    linear-gradient(110deg, #061b4f, #08245a 54%, #061b4f);
+    radial-gradient(ellipse at 73% 48%, #1768b87d 0, transparent 37%),
+    radial-gradient(ellipse at 12% 86%, #0a367b99 0, transparent 48%),
+    linear-gradient(110deg, #030d22, #071d43 54%, #040e26);
 }
 .v-odyssey-grain {
+  z-index: 2;
   opacity: .12;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.3'/%3E%3C/svg%3E");
   mix-blend-mode: soft-light;
 }
 .v-odyssey-fallback {
+  z-index: 1;
   display: grid;
   place-items: center;
   left: 50%;
   width: 52vw;
   transform: translateX(4%);
+}
+.v-odyssey-fallback-earth {
+  position: absolute;
+  width: min(31vw, 390px);
+  aspect-ratio: 1;
+  border: 1px solid #aad9f466;
+  border-radius: 50%;
+  background-position: center, 38% center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 200% 100%;
+  box-shadow: inset -42px -12px 58px #03102dcc, 0 0 50px #2887cf35;
 }
 .v-odyssey-fallback i {
   position: absolute;
@@ -3606,6 +3622,7 @@ h2:focus {
     height: 43vh;
     transform: none;
   }
+  .v-odyssey-fallback-earth { width: min(58vw, 290px); }
   .v-odyssey-fallback i { width: min(68vw, 360px); }
   .v-odyssey-fallback i:nth-child(2) { width: min(51vw, 270px); }
   .v-odyssey-fallback i:nth-child(3) { width: min(34vw, 180px); }

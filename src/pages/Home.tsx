@@ -11,7 +11,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { db, onDbChange } from "../../js/lib/db.js";
-import ClinicEarth from "../components/ClinicEarth";
+import ClinicEarth, { type MapLocation } from "../components/ClinicEarth";
 import ClinicCard from "../components/ClinicCard";
 import ImmersiveStory from "../components/ImmersiveStory";
 import Journey from "../components/Journey";
@@ -22,6 +22,7 @@ export default function Home({ session }: { session: Session | null }) {
   const navigate = useNavigate();
   const reduce = useReducedMotion();
   const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [earthLocations, setEarthLocations] = useState<MapLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -128,7 +129,12 @@ export default function Home({ session }: { session: Session | null }) {
               <span>Pesquise sem criar uma conta</span>
             </div>
           </motion.div>
-          <ClinicEarth clinics={clinics} loading={loading} failed={failed} />
+          <ClinicEarth
+            clinics={clinics}
+            loading={loading}
+            failed={failed}
+            onLocations={setEarthLocations}
+          />
         </div>
         <div className="v-container v-hero-bottom">
           <span>Mais presença. Menos espera.</span>
@@ -174,7 +180,7 @@ export default function Home({ session }: { session: Session | null }) {
           </p>
         </div>
       </motion.section>
-      <ImmersiveStory />
+      <ImmersiveStory locations={earthLocations} />
       <Journey />
       <motion.section
         className="v-section v-discover"

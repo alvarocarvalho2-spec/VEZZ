@@ -8,13 +8,17 @@ type CityLocation = {
   city: string;
   clinics: Clinic[];
   point: { x: number; y: number };
+  latitude: number;
+  longitude: number;
 };
-type MapLocation = {
+export type MapLocation = {
   key: string;
   cities: string[];
   clinics: Clinic[];
   x: number;
   y: number;
+  latitude: number;
+  longitude: number;
 };
 
 const CITY_COORDINATES: Record<string, Coordinates> = {
@@ -103,7 +107,13 @@ function buildLocations(clinics: Clinic[], cityCoordinates: Record<string, Coord
     const key = normalizeCity(city);
     const existing = byCity.get(key);
     if (existing) existing.clinics.push(clinic);
-    else byCity.set(key, { city, clinics: [clinic], point: project(coordinates) });
+    else byCity.set(key, {
+      city,
+      clinics: [clinic],
+      point: project(coordinates),
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+    });
   }
 
   const clusters: MapLocation[] = [];
@@ -118,6 +128,8 @@ function buildLocations(clinics: Clinic[], cityCoordinates: Record<string, Coord
         clinics: [...location.clinics],
         x: location.point.x,
         y: location.point.y,
+        latitude: location.latitude,
+        longitude: location.longitude,
       });
       continue;
     }
@@ -127,6 +139,10 @@ function buildLocations(clinics: Clinic[], cityCoordinates: Record<string, Coord
       (cluster.x * cluster.clinics.length + location.point.x * location.clinics.length) / total;
     cluster.y =
       (cluster.y * cluster.clinics.length + location.point.y * location.clinics.length) / total;
+    cluster.latitude =
+      (cluster.latitude * cluster.clinics.length + location.latitude * location.clinics.length) / total;
+    cluster.longitude =
+      (cluster.longitude * cluster.clinics.length + location.longitude * location.clinics.length) / total;
     cluster.cities.push(location.city);
     cluster.clinics.push(...location.clinics);
   }
@@ -144,10 +160,12 @@ export default function ClinicEarth({
   clinics,
   loading,
   failed,
+  onLocations,
 }: {
   clinics: Clinic[];
   loading: boolean;
   failed: boolean;
+  onLocations?: (locations: MapLocation[]) => void;
 }) {
   const mapId = useId().replace(/:/g, "");
   const titleId = `${mapId}-title`;
@@ -190,6 +208,9 @@ export default function ClinicEarth({
     () => buildLocations(clinics, cityCoordinates),
     [clinics, cityCoordinates],
   );
+  useEffect(() => {
+    onLocations?.(locations);
+  }, [locations, onLocations]);
   const selected = locations.find((location) => location.key === selectedKey);
 
   return (

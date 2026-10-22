@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { motion, useReducedMotion, useScroll } from "motion/react";
 import { ArrowDown, ArrowUpRight, CalendarCheck2, Clock3, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import Bot from "./Bot";
+import type { MapLocation } from "./ClinicEarth";
 
 const chapters = [
   {
@@ -37,10 +38,11 @@ const chapters = [
 
 const ScrollScene = lazy(() => import("./ScrollScene"));
 
-export default function ImmersiveStory() {
+export default function ImmersiveStory({ locations }: { locations: MapLocation[] }) {
   const section = useRef<HTMLElement>(null);
   const [chapter, setChapter] = useState(0);
   const [enabled, setEnabled] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
   const [visible, setVisible] = useState(false);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({
@@ -49,12 +51,10 @@ export default function ImmersiveStory() {
   });
 
   useEffect(() => {
-    if (reduce) return;
-    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    if (connection?.saveData) return;
-    const timer = window.setTimeout(() => setEnabled(true), 500);
+    if (!visible || enabled) return;
+    const timer = window.setTimeout(() => setEnabled(true), reduce ? 0 : 280);
     return () => window.clearTimeout(timer);
-  }, [reduce]);
+  }, [visible, enabled, reduce]);
 
   useEffect(() => {
     const root = section.current;
@@ -65,16 +65,31 @@ export default function ImmersiveStory() {
   }, []);
 
   const Scene = ScrollScene;
+  const handleSceneReady = useCallback(() => setSceneReady(true), []);
   return (
     <section ref={section} id="jornada-imersiva" className="v-odyssey" aria-label="A jornada do seu cuidado">
       <div className="v-odyssey-stage" aria-hidden="true">
         <div className="v-odyssey-wash" />
-        {enabled ? (
+        {!sceneReady && (
+          <div className="v-odyssey-fallback">
+            <div
+              className="v-odyssey-fallback-earth"
+              style={{
+                backgroundImage: `linear-gradient(105deg, #061b4f99 4%, transparent 48%, #d4f0ff60 100%), url("${import.meta.env.BASE_URL}assets/earth/land_ocean_ice_2048.jpg")`,
+              }}
+            />
+            <i /><i /><i />
+          </div>
+        )}
+        {enabled && (
           <Suspense fallback={null}>
-            <Scene progress={scrollYProgress} active={visible && !reduce} />
+            <Scene
+              progress={scrollYProgress}
+              active={visible && !reduce}
+              locations={locations}
+              onReady={handleSceneReady}
+            />
           </Suspense>
-        ) : (
-          <div className="v-odyssey-fallback"><i /><i /><i /></div>
         )}
         <div className="v-odyssey-grain" />
       </div>
