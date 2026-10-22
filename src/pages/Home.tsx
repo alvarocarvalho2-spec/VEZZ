@@ -10,8 +10,8 @@ import {
   Search,
   ShieldCheck,
 } from "lucide-react";
-import { db } from "../../js/lib/db.js";
-import HeroExperience from "../components/HeroExperience";
+import { db, onDbChange } from "../../js/lib/db.js";
+import ClinicEarth from "../components/ClinicEarth";
 import ClinicCard from "../components/ClinicCard";
 import ImmersiveStory from "../components/ImmersiveStory";
 import Journey from "../components/Journey";
@@ -30,19 +30,33 @@ export default function Home({ session }: { session: Session | null }) {
     const heading = document.querySelector<HTMLElement>("main h1");
     heading?.setAttribute("tabindex", "-1");
     heading?.focus({ preventScroll: true });
-    Promise.resolve()
-      .then(() => db().listClinics())
-      .then((list: Clinic[]) => {
-        if (!disposed) setClinics(list.slice(0, 3));
-      })
-      .catch(() => {
-        if (!disposed) setFailed(true);
-      })
-      .finally(() => {
-        if (!disposed) setLoading(false);
-      });
+    let request = 0;
+    const loadClinics = () => {
+      const currentRequest = ++request;
+      Promise.resolve()
+        .then(() => db().listClinics())
+        .then((list: Clinic[]) => {
+          if (!disposed && request === currentRequest) {
+            setClinics(list);
+            setFailed(false);
+          }
+        })
+        .catch(() => {
+          if (!disposed && request === currentRequest) setFailed(true);
+        })
+        .finally(() => {
+          if (!disposed && request === currentRequest) setLoading(false);
+        });
+    };
+    loadClinics();
+    const unsubscribe = onDbChange((reason: string) => {
+      if (reason === "clinic" || reason === "persist") loadClinics();
+    });
+    const refreshTimer = window.setInterval(loadClinics, 60_000);
     return () => {
       disposed = true;
+      window.clearInterval(refreshTimer);
+      unsubscribe();
     };
   }, []);
   return (
@@ -114,7 +128,7 @@ export default function Home({ session }: { session: Session | null }) {
               <span>Pesquise sem criar uma conta</span>
             </div>
           </motion.div>
-          <HeroExperience />
+          <ClinicEarth clinics={clinics} loading={loading} failed={failed} />
         </div>
         <div className="v-container v-hero-bottom">
           <span>Mais presença. Menos espera.</span>
@@ -195,7 +209,7 @@ export default function Home({ session }: { session: Session | null }) {
             </div>
           ) : clinics.length ? (
             <div className="v-clinic-grid">
-              {clinics.map((clinic) => (
+              {clinics.slice(0, 3).map((clinic) => (
                 <ClinicCard key={clinic.id_clinica} clinic={clinic} />
               ))}
             </div>

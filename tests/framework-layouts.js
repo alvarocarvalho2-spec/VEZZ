@@ -213,25 +213,32 @@ async (page) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.reload();
-  await page.locator(".v-experience canvas").waitFor();
+  await page.locator(".v-earth-map > svg").waitFor();
   assert(
-    (await page.locator(".v-experience.is-active").count()) === 1,
-    "3D inactive",
+    (await page.locator(".v-earth-marker").count()) > 0 &&
+      (await page.locator(".v-earth-map canvas").count()) === 0,
+    "clinic locations missing from the 2D Earth map",
   );
-  await page
-    .getByRole("button", { name: "Pausar movimento", exact: true })
-    .click();
   assert(
-    (await page.locator(".v-experience.is-active").count()) === 0,
-    "Pause did not stop scene",
+    (await page.locator(".v-earth-marker").count()) === 1,
+    "clinics in one city were not grouped into a single marker",
   );
-  await page
-    .getByRole("button", { name: "Retomar movimento", exact: true })
-    .click();
-  results.push("3D scene loads, pauses and resumes");
+  const headerAtTop = await page.locator(".v-header").evaluate((element) =>
+    getComputedStyle(element).backgroundColor,
+  );
+  await page.evaluate(() => window.scrollTo(0, 120));
+  await page.waitForFunction(() => document.querySelector(".v-header")?.classList.contains("is-scrolled"));
+  const headerOnScroll = await page.locator(".v-header").evaluate((element) =>
+    getComputedStyle(element).backgroundColor,
+  );
+  assert(headerAtTop !== headerOnScroll, "floating header opacity did not change on scroll");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.locator(".v-earth-marker").first().click();
+  assert((await page.locator(".v-earth-detail").count()) === 1, "clinic marker did not open its list");
+  results.push("2D Earth groups clinics by location and opens clinic details");
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(250);
-  await page.screenshot({ path: "output/playwright/framework-3d-desktop.png" });
+  await page.screenshot({ path: "output/playwright/framework-earth-desktop.png" });
   await page.locator(".v-odyssey-chapter").first().evaluate((element) =>
     element.scrollIntoView({ block: "center", behavior: "instant" }),
   );
@@ -241,17 +248,19 @@ async (page) => {
   await page.reload();
   await page.locator("#hero-title").waitFor();
   assert(
-    (await page.locator(".v-experience canvas, .v-odyssey-stage canvas").count()) === 0,
-    "Reduced motion loaded 3D",
+    (await page.locator(".v-earth-map canvas, .v-odyssey-stage canvas").count()) === 0,
+    "Reduced motion loaded a canvas scene",
   );
   results.push("reduced motion uses light fallback");
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.reload();
   await page.locator(".v-odyssey-stage canvas").waitFor();
+  await page.locator(".v-earth-map > svg").waitFor();
+  await page.screenshot({ path: "output/playwright/framework-earth-mobile-home.png" });
   assert(
-    (await page.locator(".v-experience canvas, .v-odyssey-stage canvas").count()) === 2,
-    "Mobile did not load both 3D scenes",
+    (await page.locator(".v-earth-map canvas, .v-odyssey-stage canvas").count()) === 1,
+    "Mobile Earth map is not a 2D illustration",
   );
   await page.locator(".v-odyssey-chapter").nth(1).evaluate((element) =>
     element.scrollIntoView({ block: "center", behavior: "instant" }),
@@ -264,8 +273,8 @@ async (page) => {
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     "Mobile immersive story overflows horizontally",
   );
-  await page.screenshot({ path: "output/playwright/framework-3d-mobile.png" });
-  results.push("mobile keeps both 3D scenes, scroll chapters and fits the viewport");
+  await page.screenshot({ path: "output/playwright/framework-earth-mobile.png" });
+  results.push("mobile keeps the 2D Earth, scroll chapters and fits the viewport");
   await page.evaluate(() => document.querySelector(".skip").click());
   assert(
     await page.evaluate(() => document.activeElement.tagName === "MAIN"),

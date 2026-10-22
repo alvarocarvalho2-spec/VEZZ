@@ -73,7 +73,7 @@ export function Header({ session }: { session: Session | null }) {
     </>
   );
   return (
-    <header className={`v-header ${scrolled ? "is-scrolled" : ""}`}>
+    <header className={`v-header ${scrolled ? "is-scrolled" : ""} ${open ? "is-open" : ""}`}>
       <div className="v-container v-header-inner">
         <Link to="/" className="v-brand" aria-label="VEZZ início">
           <Bot />

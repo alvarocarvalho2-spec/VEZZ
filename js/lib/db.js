@@ -1064,7 +1064,9 @@ export class SupabaseAdapter {
         id_clinica: clinica.id_clinica,
       },
     });
-    return this.getClinic(clinica.id_clinica);
+    const createdClinic = await this.getClinic(clinica.id_clinica);
+    emit("clinic");
+    return createdClinic;
   }
 
   async updateClinic(id, patch) {

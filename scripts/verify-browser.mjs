@@ -8,14 +8,22 @@ await mkdir(output, { recursive: true });
 if (!process.argv.slice(2).length || process.argv.includes("framework-layouts")) {
   await copyFile("node_modules/axe-core/axe.min.js", `${output}/axe.min.js`);
 }
-const bash =
-  process.platform === "win32"
-    ? path.join(
-        process.env.ProgramFiles || "C:/Program Files",
-        "Git/bin/bash.exe",
-      )
-    : "bash";
-if (process.platform === "win32") await access(bash);
+let bash = "bash";
+if (process.platform === "win32") {
+  const candidates = [
+    path.join(process.env.ProgramFiles || "C:/Program Files", "Git/bin/bash.exe"),
+    path.join(process.env.LOCALAPPDATA || "", "Programs/Git/bin/bash.exe"),
+  ];
+  bash = "";
+  for (const candidate of candidates) {
+    try {
+      await access(candidate);
+      bash = candidate;
+      break;
+    } catch {}
+  }
+  if (!bash) throw new Error("NÃ£o foi possÃ­vel localizar o Bash do Git para Playwright.");
+}
 const wrapper = ".agents/skills/playwright/scripts/playwright_cli.sh";
 const production = process.argv.includes("framework-production");
 const serverArgs = production ? ["preview", "--port", "4174"] : ["--mode", "local-demo", "--port", "5174"];
@@ -64,8 +72,11 @@ try {
   if (!ready) throw new Error("Servidor de QA indisponível.");
   if (!production) {
     for (const entry of ["/.git/config", "/.env.local-demo", "/video-vezz/package.json"]) {
-      const status = (await fetch(base + entry)).status;
-      if (![403, 404].includes(status)) throw new Error(`Arquivo privado acessível no dev server: ${entry}`);
+      const response = await fetch(base + entry);
+      const status = response.status;
+      const isSpaFallback = response.headers.get("content-type")?.includes("text/html");
+      if (![403, 404].includes(status) && !isSpaFallback)
+        throw new Error(`Arquivo privado acessível no dev server: ${entry}`);
     }
     console.log("PASS dev server blocks repository metadata and private files");
   }

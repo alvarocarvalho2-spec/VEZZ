@@ -162,22 +162,35 @@ h2:focus {
 }
 .v-header {
   position: sticky;
-  top: 0;
+  top: 14px;
   z-index: 45;
-  background: #f8fafff2;
-  border-bottom: 1px solid #061b4f0c;
+  width: min(1280px, calc(100% - 64px));
+  margin: 16px auto 0;
+  background: rgb(248 250 255 / 78%);
+  border: 1px solid #ffffffb8;
+  border-radius: 999px;
   backdrop-filter: blur(18px);
-  transition: box-shadow 0.2s;
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 8px 26px #00143a14;
+  transition: background-color 220ms ease, box-shadow 220ms ease;
 }
 .v-header.is-scrolled {
-  box-shadow: 0 4px 20px #061b4f09;
+  background: rgb(248 250 255 / 97%);
+  box-shadow: 0 10px 30px #00143a24;
+}
+.v-header.is-open {
+  border-radius: 24px;
 }
 .v-header-inner {
-  height: 86px;
+  height: 78px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+}
+.v-header-inner.v-container {
+  width: 100%;
+  padding-inline: 28px;
 }
 .v-desktop-nav {
   display: flex;
@@ -1943,8 +1956,312 @@ h2:focus {
   .modal-brand .bot { --bot-size: 38px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .v-header { transition: none; }
   .v-legacy .bot-float { animation: none; }
   .v-legacy .reveal.motion-ready:not(.in) { opacity: 1; transform: none; transition: none; }
+}
+/* A quiet, data-led 2D globe for the clinics actually present in VEZZ. */
+.v-earth {
+  --v-earth-water: #123b70;
+  --v-earth-land: #49a995;
+  --v-earth-grid: #c5e6e766;
+  --v-earth-pin: #ffd16f;
+  width: 100%;
+  min-width: 0;
+  align-self: center;
+  color: #fff;
+}
+.v-earth-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.v-earth-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: #a9d9e4;
+  font-size: 12px;
+}
+.v-earth-heading h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(18px, 2vw, 23px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.v-earth-total {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px solid #b6d9e344;
+  border-radius: 999px;
+  color: #d5e8f4;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.v-earth-map {
+  position: relative;
+  width: min(100%, 540px);
+  aspect-ratio: 560 / 370;
+  margin: 5px auto 0;
+}
+.v-earth-map > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.v-earth-water {
+  fill: var(--v-earth-water);
+  stroke: #93d9dc;
+  stroke-width: 1.2;
+}
+.v-earth-grid ellipse,
+.v-earth-grid > path {
+  fill: none;
+  stroke: var(--v-earth-grid);
+  stroke-width: 0.8;
+}
+.v-earth-grid > path {
+  stroke: #d0eee655;
+  stroke-dasharray: 2 5;
+}
+.v-earth-land path {
+  fill: var(--v-earth-land);
+  stroke: #b9ece0;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  opacity: 0.94;
+}
+.v-earth-rim {
+  fill: none;
+  stroke: #b5e8e766;
+  stroke-width: 1;
+  pointer-events: none;
+}
+.v-earth-marker {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 37px;
+  padding: 0;
+  border: 2px solid #fff8df;
+  border-radius: 50%;
+  background: var(--v-earth-pin);
+  color: #061b4f;
+  box-shadow: 0 3px 12px #00143155;
+  transform: translate(-50%, -50%);
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+.v-earth-marker:hover,
+.v-earth-marker.is-selected {
+  z-index: 2;
+  background: #fff0b8;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.v-earth-marker:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
+.v-earth-marker > span {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding-inline: 4px;
+  border: 1px solid #061b4f;
+  border-radius: 999px;
+  background: #fff;
+  color: #061b4f;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.v-earth-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 520px;
+  margin: -1px auto 0;
+  color: #bdd1e8;
+  font-size: 11px;
+}
+.v-earth-footer > span,
+.v-earth-footer > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.v-earth-footer > span i {
+  width: 8px;
+  height: 8px;
+  border: 2px solid #061b4f;
+  border-radius: 50%;
+  background: var(--v-earth-pin);
+  box-shadow: 0 0 0 1px var(--v-earth-pin);
+}
+.v-earth-footer > a {
+  min-height: 36px;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.v-earth-footer > a:hover {
+  color: var(--v-earth-pin);
+}
+.v-earth-message,
+.v-earth-unmapped {
+  max-width: 520px;
+  margin: 10px auto 0;
+  color: #c3d5e9;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.v-earth-detail {
+  max-width: 520px;
+  margin: 12px auto 0;
+  padding: 13px 16px 12px;
+  border: 1px solid #ffffff;
+  border-radius: 14px;
+  background: #f8fbff;
+  color: #061b4f;
+  box-shadow: 0 10px 25px #00143122;
+}
+.v-earth-detail-heading,
+.v-earth-detail-heading > div {
+  display: flex;
+  align-items: center;
+}
+.v-earth-detail-heading {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+.v-earth-detail-heading > div {
+  min-width: 0;
+  gap: 8px;
+}
+.v-earth-detail-heading > div > svg {
+  color: #0b6f75;
+}
+.v-earth-detail-heading strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v-earth-detail-heading button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #526580;
+}
+.v-earth-detail-heading button:hover {
+  background: #e7eef7;
+  color: #061b4f;
+}
+.v-earth-detail ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  list-style: none;
+}
+.v-earth-detail li a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  border-top: 1px solid #e3eaf3;
+  color: #123b70;
+  font-size: 12px;
+}
+.v-earth-detail li a > span {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v-earth-detail li small {
+  color: #60718c;
+  font-size: 10px;
+}
+.v-earth-detail li a:hover > span {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.v-earth-more {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0b3b8f;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.v-earth-more:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 959px) {
+  .v-header {
+    width: calc(100% - 40px);
+  }
+}
+@media (max-width: 767px) {
+  .v-header {
+    width: calc(100% - 24px);
+  }
+  .v-earth {
+    width: min(100%, 540px);
+    margin-inline: auto;
+  }
+  .v-earth-heading,
+  .v-earth-footer {
+    padding-inline: 4px;
+  }
+  .v-earth-heading h2 {
+    font-size: 20px;
+  }
+  .v-earth-marker {
+    width: 36px;
+    height: 36px;
+  }
+}
+@media (max-width: 380px) {
+  .v-earth-heading {
+    align-items: flex-start;
+  }
+  .v-earth-total {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+  .v-earth-footer {
+    align-items: flex-start;
+  }
+  .v-earth-footer > span {
+    max-width: 190px;
+    line-height: 1.4;
+  }
 }
 /* Layout changes follow content constraints, from narrow phones to large displays. */
 @media (min-width: 1500px) {
@@ -2031,8 +2348,11 @@ h2:focus {
     gap: 8px;
   }
   .v-header-inner {
-    height: 76px;
+    height: 72px;
     gap: 16px;
+  }
+  .v-header-inner.v-container {
+    padding-inline: 20px;
   }
   .v-brand span {
     font-size: 25px;
@@ -2184,7 +2504,15 @@ h2:focus {
     width: calc(100% - 40px);
   }
   .v-header-inner {
-    height: 70px;
+    height: 64px;
+  }
+  .v-header {
+    top: 8px;
+    width: calc(100% - 24px);
+    margin-top: 8px;
+  }
+  .v-header-inner.v-container {
+    padding-inline: 13px;
   }
   .v-desktop-nav {
     display: none;
@@ -2204,10 +2532,12 @@ h2:focus {
   .v-mobile-menu {
     display: flex;
     flex-direction: column;
-    background: #f8faff;
-    border-bottom: 1px solid #d8e3f1;
+    background: transparent;
+    border: 0;
     overflow: hidden;
-    padding-inline: 20px;
+    margin: 0 12px 10px;
+    padding-inline: 10px;
+    border-radius: 0 0 16px 16px;
   }
   .v-mobile-menu a {
     min-height: 54px;

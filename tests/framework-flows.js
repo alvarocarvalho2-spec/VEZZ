@@ -55,23 +55,33 @@ async (page) => {
     ),
   );
   await check(
-    "hero demo responds to all stages without changing data",
+    "Earth map updates with new clinics and opens their location",
     async () => {
-      await page.getByRole("button", { name: "Sua vez", exact: true }).click();
-      await page.waitForFunction(() =>
-        document
-          .querySelector(".v-preview-value")
-          ?.textContent.includes("Sua vez"),
+      await page.evaluate(() => api.createClinic({
+        nome: "Clínica QA Aquiraz",
+        cnpj: "00000000000000",
+        telefone: "1133334444",
+        descricao: "Clínica criada durante a validação local.",
+        especialidades: ["Clínica Geral"],
+        rua: "Rua de Teste",
+        numero: "10",
+        bairro: "Centro",
+        cidade: "Aquiraz",
+        cep: "01000-000",
+        horarios: {},
+      }));
+      await page.getByRole("button", { name: /Aquiraz/ }).waitFor();
+      await page.locator(".v-earth-marker").first().click();
+      await page.getByRole("button", { name: /Ver mais/ }).click();
+      assert(
+        (await page.locator(".v-earth-detail").innerText()).includes("Clínica QA Aquiraz"),
+        "New clinic was not shown in the map details",
       );
-      await page.getByRole("button", { name: "Agendar", exact: true }).click();
-      await page.waitForFunction(() =>
-        document
-          .querySelector(".v-preview-value")
-          ?.textContent.includes("09:30"),
-      );
+      await page.evaluate(() => api.resetDemo());
+      await page.waitForFunction(() => document.querySelectorAll(".v-earth-marker").length === 1);
       assert(
         await page.evaluate(() => !api.getSession()),
-        "Demo created a session",
+        "Map validation created a session",
       );
     },
   );
