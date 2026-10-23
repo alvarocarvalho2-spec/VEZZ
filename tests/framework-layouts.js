@@ -213,15 +213,13 @@ async (page) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.reload();
-  await page.locator(".v-earth-map > svg").waitFor();
-  assert(
-    (await page.locator(".v-earth-marker").count()) > 0 &&
-      (await page.locator(".v-earth-map canvas").count()) === 0,
-    "clinic locations missing from the 2D Earth map",
+  await page.locator(".v-care-preview").waitFor();
+  await page.waitForFunction(() =>
+    /\d+/.test(document.querySelector(".v-care-network-status")?.textContent || ""),
   );
-  assert(
-    (await page.locator(".v-earth-marker").count()) === 1,
-    "clinics in one city were not grouped into a single marker",
+  await page.getByRole("tab", { name: "Acompanhe" }).click();
+  await page.waitForFunction(() =>
+    document.querySelector(".v-care-panel h2")?.textContent.includes("Sua vez se aproxima"),
   );
   const headerAtTop = await page.locator(".v-header").evaluate((element) =>
     getComputedStyle(element).backgroundColor,
@@ -233,48 +231,46 @@ async (page) => {
   );
   assert(headerAtTop !== headerOnScroll, "floating header opacity did not change on scroll");
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.locator(".v-earth-marker").first().click();
-  assert((await page.locator(".v-earth-detail").count()) === 1, "clinic marker did not open its list");
-  results.push("2D Earth groups clinics by location and opens clinic details");
-  await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(250);
-  await page.screenshot({ path: "output/playwright/framework-earth-desktop.png" });
+  await page.screenshot({ path: "output/playwright/framework-care-preview-desktop.png" });
   await page.locator(".v-odyssey-chapter").first().evaluate((element) =>
     element.scrollIntoView({ block: "center", behavior: "instant" }),
   );
-  await page.waitForTimeout(900);
-  await page.screenshot({ path: "output/playwright/framework-3d-story-desktop.png" });
+  await page.locator(".v-odyssey-stage canvas").waitFor();
+  const earthControl = page.locator(".v-odyssey-earth-control");
+  await earthControl.focus();
+  await page.keyboard.press("ArrowRight");
+  assert((await earthControl.getAttribute("aria-label")).includes("Arraste"), "Earth controls missing accessible instructions");
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: "output/playwright/framework-earth-desktop.png" });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
   await page.locator("#hero-title").waitFor();
-  assert(
-    (await page.locator(".v-earth-map canvas, .v-odyssey-stage canvas").count()) === 0,
-    "Reduced motion loaded a canvas scene",
+  await page.locator(".v-care-art-orbit").first().waitFor();
+  const reducedMotion = await page.locator(".v-care-art-orbit").first().evaluate((element) =>
+    getComputedStyle(element).animationName === "none",
   );
-  results.push("reduced motion uses light fallback");
+  assert(reducedMotion, "decorative care preview animation ignores reduced motion");
+  await page.locator(".v-odyssey-chapter").first().evaluate((element) =>
+    element.scrollIntoView({ block: "center", behavior: "instant" }),
+  );
+  await page.locator(".v-odyssey-earth-control").waitFor();
+  results.push("reduced motion pauses decorative animation and keeps Earth controls available");
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.reload();
-  await page.locator(".v-odyssey-stage canvas").waitFor();
-  await page.locator(".v-earth-map > svg").waitFor();
-  await page.screenshot({ path: "output/playwright/framework-earth-mobile-home.png" });
-  assert(
-    (await page.locator(".v-earth-map canvas, .v-odyssey-stage canvas").count()) === 1,
-    "Mobile Earth map is not a 2D illustration",
-  );
+  await page.locator(".v-care-preview").waitFor();
+  await page.screenshot({ path: "output/playwright/framework-care-preview-mobile.png" });
   await page.locator(".v-odyssey-chapter").nth(1).evaluate((element) =>
     element.scrollIntoView({ block: "center", behavior: "instant" }),
   );
+  await page.locator(".v-odyssey-stage canvas").waitFor();
   await page.waitForFunction(() =>
-    document.querySelector(".v-odyssey-chapter.is-current h2")?.textContent.includes("Um horário"),
+    document.querySelector(".v-odyssey-chapter.is-current .v-odyssey-eyebrow")?.textContent.includes("liberdade"),
   );
-  await page.waitForTimeout(900);
-  assert(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-    "Mobile immersive story overflows horizontally",
-  );
+  await page.waitForFunction(() => document.documentElement.scrollWidth <= innerWidth);
   await page.screenshot({ path: "output/playwright/framework-earth-mobile.png" });
-  results.push("mobile keeps the 2D Earth, scroll chapters and fits the viewport");
+  results.push("mobile preview, scroll story and Earth controls fit the viewport");
   await page.evaluate(() => document.querySelector(".skip").click());
   assert(
     await page.evaluate(() => document.activeElement.tagName === "MAIN"),

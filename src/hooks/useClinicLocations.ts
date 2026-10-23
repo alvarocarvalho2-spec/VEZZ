@@ -1,7 +1,5 @@
-import { useEffect, useId, useMemo, useState } from "react";
-import { ArrowUpRight, MapPin, X } from "lucide-react";
-import { Link } from "react-router-dom";
-import type { Clinic } from "../types";
+import { useEffect, useMemo, useState } from 'react';
+import type { Clinic } from '../types';
 
 type Coordinates = { latitude: number; longitude: number };
 type CityLocation = {
@@ -156,23 +154,9 @@ function buildLocations(clinics: Clinic[], cityCoordinates: Record<string, Coord
   };
 }
 
-export default function ClinicEarth({
-  clinics,
-  loading,
-  failed,
-  onLocations,
-}: {
-  clinics: Clinic[];
-  loading: boolean;
-  failed: boolean;
-  onLocations?: (locations: MapLocation[]) => void;
-}) {
-  const mapId = useId().replace(/:/g, "");
-  const titleId = `${mapId}-title`;
-  const clipId = `${mapId}-globe-clip`;
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
+export function useClinicLocations(clinics: Clinic[]) {
   const [cityCoordinates, setCityCoordinates] = useState(CITY_COORDINATES);
+
   useEffect(() => {
     let active = true;
 
@@ -204,133 +188,9 @@ export default function ClinicEarth({
       active = false;
     };
   }, []);
-  const { locations, unmapped } = useMemo(
-    () => buildLocations(clinics, cityCoordinates),
+
+  return useMemo(
+    () => buildLocations(clinics, cityCoordinates).locations,
     [clinics, cityCoordinates],
-  );
-  useEffect(() => {
-    onLocations?.(locations);
-  }, [locations, onLocations]);
-  const selected = locations.find((location) => location.key === selectedKey);
-
-  return (
-    <section className="v-earth" aria-labelledby={titleId}>
-      <div className="v-earth-heading">
-        <div>
-          <span className="v-earth-kicker">Rede de clínicas</span>
-          <h2 id={titleId}>Cuidado mais perto.</h2>
-        </div>
-        <span className="v-earth-total" aria-live="polite">
-          {loading ? "Atualizando" : `${clinics.length} ${clinics.length === 1 ? "clínica" : "clínicas"}`}
-        </span>
-      </div>
-
-      <div className="v-earth-map">
-        <svg viewBox="0 0 560 370" role="img" aria-labelledby={`${titleId}-map-title`}>
-          <title id={`${titleId}-map-title`}>Mapa ilustrado da Terra com clínicas por cidade</title>
-          <defs>
-            <clipPath id={clipId}>
-              <circle cx="280" cy="185" r="164" />
-            </clipPath>
-          </defs>
-          <circle className="v-earth-water" cx="280" cy="185" r="164" />
-          <g className="v-earth-grid" clipPath={`url(#${clipId})`}>
-            <ellipse cx="280" cy="185" rx="68" ry="164" />
-            <ellipse cx="280" cy="185" rx="124" ry="164" />
-            <ellipse cx="280" cy="185" rx="164" ry="164" />
-            <ellipse cx="280" cy="185" rx="164" ry="42" />
-            <ellipse cx="280" cy="185" rx="164" ry="94" />
-            <path d="M116 185h328" />
-            <g className="v-earth-land">
-              <path d="m139 91 19-20 25-7 15 10 22-4 19 13 18 3 11 14-8 12-17 5-7 14-16 4-12 18-13 1-11-17-21-4-11-13-16-4-6-13-12-5z" />
-              <path d="m218 162 18-9 19 8 14 14 17 8 7 15-8 12 5 15-10 13-4 22-12 19-5 24-13 19-10-12 2-22-11-17-1-20-11-14 4-18-8-16 8-18-8-12z" />
-              <path d="m225 64 18-11 19 5 9 12-8 12-18 1-12-8z" />
-              <path d="m277 111 11-14 15-2 8 9 15-1 8 10-8 9-15-2-7 10-17-1-9-8-10 1z" />
-              <path d="m289 144 19-8 21 8 12 16-5 18-13 12-2 22-13 27-13 12-10-8 3-22-9-15 4-16-8-16 7-14-5-10z" />
-              <path d="m331 94 18-13 22 3 15-11 27 8 10 16 24 8 9 17-14 12-18-5-11 12-18-5-12 10-17-7-11 12-18-8-16 5-13-11 7-15-8-12z" />
-              <path d="m376 223 14-10 18 3 16 12-4 14-14 8-20-5-13-10z" />
-              <path d="m424 154 6-8 7 5-3 14-7 3z" />
-              <path d="m175 171 7-4 7 6-2 12-7 4-6-8z" />
-            </g>
-          </g>
-          <circle className="v-earth-rim" cx="280" cy="185" r="164" />
-        </svg>
-
-        {locations.map((location) => {
-          const label = location.cities.length === 1
-            ? location.cities[0]
-            : `${location.cities.slice(0, 2).join(" e ")}${location.cities.length > 2 ? " e região" : ""}`;
-          return (
-            <button
-              key={location.key}
-              className={`v-earth-marker ${selectedKey === location.key ? "is-selected" : ""}`}
-              style={{ left: `${(location.x / 560) * 100}%`, top: `${(location.y / 370) * 100}%` }}
-              onClick={() => {
-                setSelectedKey(selectedKey === location.key ? null : location.key);
-                setExpanded(false);
-              }}
-              aria-label={`${location.clinics.length} ${location.clinics.length === 1 ? "clínica" : "clínicas"} em ${label}`}
-              aria-pressed={selectedKey === location.key}
-              title={`${label}: ${location.clinics.length} clínicas`}
-            >
-              <MapPin size={17} aria-hidden="true" />
-              <span>{location.clinics.length}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="v-earth-footer">
-        <span><i aria-hidden="true" />Uma marcação por cidade ou região</span>
-        <Link to="/clinicas">Ver clínicas <ArrowUpRight size={16} /></Link>
-      </div>
-
-      {failed ? (
-        <p className="v-earth-message" role="status">Não foi possível atualizar as clínicas agora.</p>
-      ) : !loading && clinics.length === 0 ? (
-        <p className="v-earth-message" role="status">As clínicas cadastradas aparecerão neste mapa.</p>
-      ) : null}
-
-      {selected && (
-        <div className="v-earth-detail" aria-live="polite">
-          <div className="v-earth-detail-heading">
-            <div>
-              <MapPin size={16} aria-hidden="true" />
-              <strong>{selected.cities.join(", ")}</strong>
-            </div>
-            <button type="button" onClick={() => { setSelectedKey(null); setExpanded(false); }} aria-label="Fechar clínicas desta região">
-              <X size={16} />
-            </button>
-          </div>
-          <ul>
-            {selected.clinics.slice(0, expanded ? selected.clinics.length : 3).map((clinic) => (
-              <li key={clinic.id_clinica}>
-                <Link to={`/clinica/${clinic.id_clinica}`}>
-                  <span>{clinic.nome}</span>
-                  <small>{clinic.endereco?.bairro || clinic.endereco?.cidade}</small>
-                  <ArrowUpRight size={15} aria-hidden="true" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {selected.clinics.length > 3 && (
-            <button
-              className="v-earth-more"
-              type="button"
-              aria-expanded={expanded}
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? "Mostrar menos" : `Ver mais ${selected.clinics.length - 3} clínicas desta região`}
-            </button>
-          )}
-        </div>
-      )}
-
-      {unmapped.length > 0 && (
-        <p className="v-earth-unmapped" role="status">
-          {unmapped.length} {unmapped.length === 1 ? "clínica ainda não tem" : "clínicas ainda não têm"} cidade reconhecida para posicionar no mapa.
-        </p>
-      )}
-    </section>
   );
 }

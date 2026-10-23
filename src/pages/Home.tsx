@@ -11,20 +11,21 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { db, onDbChange } from "../../js/lib/db.js";
-import ClinicEarth, { type MapLocation } from "../components/ClinicEarth";
+import CareFlowPreview from "../components/CareFlowPreview";
 import ClinicCard from "../components/ClinicCard";
 import ImmersiveStory from "../components/ImmersiveStory";
 import Journey from "../components/Journey";
 import Bot from "../components/Bot";
+import { useClinicLocations } from "../hooks/useClinicLocations";
 import type { Clinic, Session } from "../types";
 
 export default function Home({ session }: { session: Session | null }) {
   const navigate = useNavigate();
   const reduce = useReducedMotion();
   const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [earthLocations, setEarthLocations] = useState<MapLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const earthLocations = useClinicLocations(clinics);
   useEffect(() => {
     let disposed = false;
     document.title = "VEZZ — Seu tempo merece cuidado";
@@ -129,11 +130,10 @@ export default function Home({ session }: { session: Session | null }) {
               <span>Pesquise sem criar uma conta</span>
             </div>
           </motion.div>
-          <ClinicEarth
+          <CareFlowPreview
             clinics={clinics}
             loading={loading}
             failed={failed}
-            onLocations={setEarthLocations}
           />
         </div>
         <div className="v-container v-hero-bottom">

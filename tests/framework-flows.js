@@ -54,37 +54,33 @@ async (page) => {
       "Production adapter is forbidden",
     ),
   );
-  await check(
-    "Earth map updates with new clinics and opens their location",
-    async () => {
-      await page.evaluate(() => api.createClinic({
-        nome: "Clínica QA Aquiraz",
-        cnpj: "00000000000000",
-        telefone: "1133334444",
-        descricao: "Clínica criada durante a validação local.",
-        especialidades: ["Clínica Geral"],
-        rua: "Rua de Teste",
-        numero: "10",
-        bairro: "Centro",
-        cidade: "Aquiraz",
-        cep: "01000-000",
-        horarios: {},
-      }));
-      await page.getByRole("button", { name: /Aquiraz/ }).waitFor();
-      await page.locator(".v-earth-marker").first().click();
-      await page.getByRole("button", { name: /Ver mais/ }).click();
-      assert(
-        (await page.locator(".v-earth-detail").innerText()).includes("Clínica QA Aquiraz"),
-        "New clinic was not shown in the map details",
-      );
-      await page.evaluate(() => api.resetDemo());
-      await page.waitForFunction(() => document.querySelectorAll(".v-earth-marker").length === 1);
-      assert(
-        await page.evaluate(() => !api.getSession()),
-        "Map validation created a session",
-      );
-    },
-  );
+  await check("hero preview follows the clinic network and switches care steps", async () => {
+    await page.evaluate(() => api.createClinic({
+      nome: "Clinica QA Aquiraz",
+      cnpj: "00000000000000",
+      telefone: "1133334444",
+      descricao: "Clinica criada durante a validacao local.",
+      especialidades: ["Clinica Geral"],
+      rua: "Rua de Teste",
+      numero: "10",
+      bairro: "Centro",
+      cidade: "Aquiraz",
+      cep: "01000-000",
+      horarios: {},
+    }));
+    await page.waitForFunction(() =>
+      document.querySelector(".v-care-network-status")?.textContent.includes("5"),
+    );
+    await page.getByRole("tab", { name: "Acompanhe" }).click();
+    await page.waitForFunction(() =>
+      document.querySelector(".v-care-panel h2")?.textContent.includes("Sua vez se aproxima"),
+    );
+    await page.evaluate(() => api.resetDemo());
+    await page.waitForFunction(() =>
+      document.querySelector(".v-care-network-status")?.textContent.includes("4"),
+    );
+    assert(await page.evaluate(() => !api.getSession()), "Preview validation created a session");
+  });
   await check("interactive journey can be explored with keyboard", async () => {
     await page.getByRole("button", { name: /Escolha o seu horário/ }).focus();
     await page.keyboard.press("Enter");

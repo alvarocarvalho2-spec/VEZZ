@@ -1,34 +1,36 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { motion, useReducedMotion, useScroll } from "motion/react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type WheelEvent } from "react";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
 import { ArrowDown, ArrowUpRight, CalendarCheck2, Clock3, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import earthIllustrationUrl from "../assets/earth/vezz-earth-illustration.svg";
 import Bot from "./Bot";
-import type { MapLocation } from "./ClinicEarth";
+import type { MapLocation } from "../hooks/useClinicLocations";
+
+type EarthInteraction = { yaw: number; pitch: number };
 
 const chapters = [
   {
     eyebrow: "Comece por perto",
-    title: "O cuidado certo\ncomeça no seu ritmo.",
-    body: "Encontre clínicas por especialidade e localização. Explore com calma, sem precisar criar uma conta.",
-    action: "Explorar clínicas",
+    title: "O cuidado certo\ncomeÃ§a no seu ritmo.",
+    body: "Encontre clÃ­nicas por especialidade e localizaÃ§Ã£o. Explore com calma, sem precisar criar uma conta.",
+    action: "Explorar clÃ­nicas",
     href: "/clinicas",
     icon: MapPin,
     bot: "thinking",
   },
   {
     eyebrow: "Escolha com liberdade",
-    title: "Um horário que\ncabe na sua vida.",
-    body: "Veja os horários disponíveis e marque a consulta que faz sentido para o seu dia.",
-    action: "Encontrar meu horário",
+    title: "Um horÃ¡rio que\ncabe na sua vida.",
+    body: "Veja os horÃ¡rios disponÃ­veis e marque a consulta que faz sentido para o seu dia.",
+    action: "Encontrar meu horÃ¡rio",
     href: "/clinicas",
     icon: CalendarCheck2,
     bot: "cool",
   },
   {
     eyebrow: "Acompanhe sem ansiedade",
-    title: "Sua vez se aproxima.\nVocê continua vivendo.",
-    body: "No dia, acompanhe a fila e a previsão de espera. Quando chegar a hora, você sabe.",
+    title: "Sua vez se aproxima.\nVocÃª continua vivendo.",
+    body: "No dia, acompanhe a fila e a previsÃ£o de espera. Quando chegar a hora, vocÃª sabe.",
     action: "Entenda como funciona",
     href: "/como-funciona",
     icon: Clock3,
@@ -40,11 +42,15 @@ const ScrollScene = lazy(() => import("./ScrollScene"));
 
 export default function ImmersiveStory({ locations }: { locations: MapLocation[] }) {
   const section = useRef<HTMLElement>(null);
+  const interaction = useRef<EarthInteraction>({ yaw: 0, pitch: 0 });
+  const invalidateScene = useRef<(() => void) | null>(null);
+  const drag = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const [chapter, setChapter] = useState(0);
   const [enabled, setEnabled] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
   const [visible, setVisible] = useState(false);
-  const reduce = useReducedMotion();
+  const [dragging, setDragging] = useState(false);
+  const reduce = useReducedMotion() ?? false;
   const { scrollYProgress } = useScroll({
     target: section,
     offset: ["start start", "end end"],
@@ -64,34 +70,94 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
     return () => observer.disconnect();
   }, []);
 
+  useMotionValueEvent(scrollYProgress, "change", () => {
+    if (reduce) invalidateScene.current?.();
+  });
+
   const Scene = ScrollScene;
   const handleSceneReady = useCallback(() => setSceneReady(true), []);
+  const handleInvalidateReady = useCallback((invalidate: (() => void) | null) => {
+    invalidateScene.current = invalidate;
+  }, []);
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragging(true);
+  };
+  const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
+    const previous = drag.current;
+    if (!previous || previous.pointerId !== event.pointerId) return;
+    const deltaX = event.clientX - previous.x;
+    const deltaY = event.clientY - previous.y;
+    previous.x = event.clientX;
+    previous.y = event.clientY;
+    interaction.current.yaw += deltaX * 0.008;
+    interaction.current.pitch = Math.max(-0.55, Math.min(0.55, interaction.current.pitch + deltaY * 0.006));
+    invalidateScene.current?.();
+  };
+  const endPointerDrag = (event: PointerEvent<HTMLButtonElement>) => {
+    if (drag.current?.pointerId !== event.pointerId) return;
+    drag.current = null;
+    setDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+  const handleWheel = (event: WheelEvent<HTMLButtonElement>) => {
+    interaction.current.yaw += event.deltaY * 0.0018 + event.deltaX * 0.0012;
+    interaction.current.pitch = Math.max(-0.55, Math.min(0.55, interaction.current.pitch + event.deltaY * 0.00025));
+    invalidateScene.current?.();
+  };
+  const handleEarthKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const turn = 0.2;
+    if (event.key === "ArrowLeft") interaction.current.yaw -= turn;
+    else if (event.key === "ArrowRight") interaction.current.yaw += turn;
+    else if (event.key === "ArrowUp") interaction.current.pitch = Math.max(-0.55, interaction.current.pitch - turn);
+    else if (event.key === "ArrowDown") interaction.current.pitch = Math.min(0.55, interaction.current.pitch + turn);
+    else if (event.key === "Home") interaction.current = { yaw: 0, pitch: 0 };
+    else return;
+    event.preventDefault();
+    invalidateScene.current?.();
+  };
+
   return (
     <section ref={section} id="jornada-imersiva" className="v-odyssey" aria-label="A jornada do seu cuidado">
-      <div className="v-odyssey-stage" aria-hidden="true">
-        <div className="v-odyssey-wash" />
+      <div className="v-odyssey-stage">
+        <div className="v-odyssey-wash" aria-hidden="true" />
         {!sceneReady && (
-          <div className="v-odyssey-fallback">
-            <div
-              className="v-odyssey-fallback-earth"
-              style={{
-                backgroundImage: `linear-gradient(105deg, #061b4f99 4%, transparent 48%, #d4f0ff60 100%), url("${import.meta.env.BASE_URL}assets/earth/land_ocean_ice_2048.jpg")`,
-              }}
-            />
-            <i /><i /><i />
-          </div>
+          <div
+            className="v-odyssey-fallback"
+            aria-hidden="true"
+            style={{ backgroundImage: `linear-gradient(105deg, #061b4f99 4%, transparent 48%, #d4f0ff60 100%), url("${earthIllustrationUrl}")` }}
+          />
         )}
         {enabled && (
           <Suspense fallback={null}>
             <Scene
               progress={scrollYProgress}
-              active={visible && !reduce}
+              active={visible}
+              reduceMotion={reduce}
+              interaction={interaction}
               locations={locations}
               onReady={handleSceneReady}
+              onInvalidateReady={handleInvalidateReady}
             />
           </Suspense>
         )}
-        <div className="v-odyssey-grain" />
+        <button
+          type="button"
+          className={`v-odyssey-earth-control ${dragging ? "is-dragging" : ""}`}
+          aria-label="Girar o globo da Terra. Arraste ou use a roda do mouse; pelas setas, gire para cima, para baixo, Ã  esquerda ou Ã  direita. Home volta Ã  posiÃ§Ã£o inicial."
+          aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home"
+          title="Arraste ou role para girar. Use as setas do teclado."
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endPointerDrag}
+          onPointerCancel={endPointerDrag}
+          onWheel={handleWheel}
+          onKeyDown={handleEarthKeyDown}
+        />
+        <span className="v-odyssey-earth-hint" aria-hidden="true">Arraste ou role para girar</span>
+        <div className="v-odyssey-grain" aria-hidden="true" />
       </div>
       <div className="v-odyssey-rail" aria-hidden="true">
         <span>Seu cuidado, em movimento</span>
@@ -118,7 +184,7 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
               <h2 id={`odyssey-title-${index}`}>{item.title.split("\n").map((line) => <span key={line}>{line}</span>)}</h2>
               <p>{item.body}</p>
               <Link to={item.href} className="v-odyssey-link">{item.action}<ArrowUpRight size={18} /></Link>
-              <div className="v-odyssey-mascot"><Bot expression={item.bot} /><span>O VEZZ acompanha você.</span></div>
+              <div className="v-odyssey-mascot"><Bot expression={item.bot} /><span>O VEZZ acompanha vocÃª.</span></div>
             </motion.div>
             <div className="v-odyssey-scene-caption" aria-hidden="true">
               <span>VEZZ / jornada do cuidado</span><strong>0{index + 1}</strong>
