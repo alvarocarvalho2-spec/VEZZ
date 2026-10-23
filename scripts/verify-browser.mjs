@@ -22,7 +22,7 @@ if (process.platform === "win32") {
       break;
     } catch {}
   }
-  if (!bash) throw new Error("NÃ£o foi possÃ­vel localizar o Bash do Git para Playwright.");
+  if (!bash) throw new Error("Não foi possível localizar o Bash do Git para Playwright.");
 }
 const wrapper = ".agents/skills/playwright/scripts/playwright_cli.sh";
 const production = process.argv.includes("framework-production");

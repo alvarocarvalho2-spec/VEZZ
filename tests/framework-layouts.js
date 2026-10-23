@@ -214,6 +214,20 @@ async (page) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.reload();
   await page.locator(".v-care-preview").waitFor();
+  assert(await page.evaluate(() => !/[\u00c3\u00c2][\u0080-\u00bf]|\ufffd/.test(document.body.textContent)), "Homepage contains broken accented text");
+  const sculpture = page.getByRole("button", { name: /Girar a escultura/ });
+  const initialRotation = await sculpture.getAttribute("style");
+  await sculpture.focus();
+  await page.keyboard.press("ArrowRight");
+  assert(await sculpture.getAttribute("style") !== initialRotation, "Sculpture did not rotate with keyboard");
+  await page.keyboard.press("Home");
+  const sculptureBox = await sculpture.boundingBox();
+  await page.mouse.move(sculptureBox.x + sculptureBox.width / 2, sculptureBox.y + 70);
+  await page.mouse.down();
+  await page.mouse.move(sculptureBox.x + sculptureBox.width / 2 + 50, sculptureBox.y + 90, { steps: 5 });
+  await page.mouse.up();
+  assert(await sculpture.getAttribute("style") !== initialRotation, "Sculpture did not rotate by dragging");
+  assert((await page.locator(".v-care-preview").boundingBox()).width <= 410, "Hero sculpture should stay compact");
   await page.waitForFunction(() =>
     /\d+/.test(document.querySelector(".v-care-network-status")?.textContent || ""),
   );
@@ -237,6 +251,8 @@ async (page) => {
     element.scrollIntoView({ block: "center", behavior: "instant" }),
   );
   await page.locator(".v-odyssey-stage canvas").waitFor();
+  await page.locator(".v-odyssey-render.is-ready").waitFor();
+  assert(await page.locator(".v-odyssey-fallback").count() === 0, "Flat Earth loading image must not flash before the globe");
   const earthControl = page.locator(".v-odyssey-earth-control");
   await earthControl.focus();
   await page.keyboard.press("ArrowRight");
@@ -246,8 +262,8 @@ async (page) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
   await page.locator("#hero-title").waitFor();
-  await page.locator(".v-care-art-orbit").first().waitFor();
-  const reducedMotion = await page.locator(".v-care-art-orbit").first().evaluate((element) =>
+  await page.locator(".v-care-sculpture-world").waitFor({ state: "attached" });
+  const reducedMotion = await page.locator(".v-care-sculpture-world").evaluate((element) =>
     getComputedStyle(element).animationName === "none",
   );
   assert(reducedMotion, "decorative care preview animation ignores reduced motion");

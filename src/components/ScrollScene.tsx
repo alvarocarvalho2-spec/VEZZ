@@ -44,13 +44,13 @@ function ClinicPins({ locations }: { locations: MapLocation[] }) {
   const stemMaterial = useMemo(() => new MeshBasicMaterial({ color: "#8de9eb" }), []);
   const lightMaterial = useMemo(() => new MeshBasicMaterial({ color: "#fff1bc" }), []);
   const haloMaterial = useMemo(
-    () => new MeshBasicMaterial({ color: "#ffd278", transparent: true, opacity: 0.2, depthWrite: false }),
+    () => new MeshBasicMaterial({ color: "#ffd278", transparent: true, opacity: 0.27, depthWrite: false }),
     [],
   );
   const markers = useMemo(
     () => locations.map((location) => ({
       surface: latLngToVector(location.latitude, location.longitude, earthRadius + 0.013),
-      size: MathUtils.clamp(0.017 + Math.log2(location.clinics.length + 1) * 0.003, 0.017, 0.033),
+      size: MathUtils.clamp(0.020 + Math.log2(location.clinics.length + 1) * 0.0035, 0.020, 0.037),
     })),
     [locations],
   );
@@ -70,7 +70,7 @@ function ClinicPins({ locations }: { locations: MapLocation[] }) {
 
       helper.position.copy(surface).addScaledVector(direction, 0.034);
       helper.quaternion.copy(outward);
-      helper.scale.set(0.006, 0.072, 0.006);
+      helper.scale.set(0.007, 0.072, 0.007);
       helper.updateMatrix();
       stemMesh.setMatrixAt(index, helper.matrix);
 
@@ -211,6 +211,7 @@ function Earth({
 }) {
   const composition = useRef<Group>(null);
   const planet = useRef<Group>(null);
+  const rendered = useRef(false);
   const surfaceTexture = useLoader(TextureLoader, earthIllustrationUrl);
   const { viewport, camera } = useThree();
   const mobile = viewport.width < 6;
@@ -219,8 +220,7 @@ function Earth({
     surfaceTexture.colorSpace = SRGBColorSpace;
     surfaceTexture.anisotropy = 8;
     surfaceTexture.needsUpdate = true;
-    onReady();
-  }, [surfaceTexture, onReady]);
+  }, [surfaceTexture]);
 
   useFrame(({ clock }, delta) => {
     if (!active || !composition.current || !planet.current) return;
@@ -261,7 +261,12 @@ function Earth({
   return (
     <group ref={composition} position={[mobile ? 0.12 : 1.38, mobile ? -1.18 : 0.02, 0]} scale={mobile ? 0.79 : 1.16}>
       <group ref={planet} rotation={[0.04, -0.68, 0.13]}>
-        <mesh>
+        <mesh onAfterRender={() => {
+          if (!rendered.current) {
+            rendered.current = true;
+            onReady();
+          }
+        }}>
           <sphereGeometry args={[earthRadius, 128, 96]} />
           <meshStandardMaterial map={surfaceTexture} bumpMap={surfaceTexture} bumpScale={0.012} roughness={0.86} metalness={0.025} />
         </mesh>

@@ -2,7 +2,6 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState, type Keyboard
 import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
 import { ArrowDown, ArrowUpRight, CalendarCheck2, Clock3, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
-import earthIllustrationUrl from "../assets/earth/vezz-earth-illustration.svg";
 import Bot from "./Bot";
 import type { MapLocation } from "../hooks/useClinicLocations";
 
@@ -11,26 +10,26 @@ type EarthInteraction = { yaw: number; pitch: number };
 const chapters = [
   {
     eyebrow: "Comece por perto",
-    title: "O cuidado certo\ncomeÃ§a no seu ritmo.",
-    body: "Encontre clÃ­nicas por especialidade e localizaÃ§Ã£o. Explore com calma, sem precisar criar uma conta.",
-    action: "Explorar clÃ­nicas",
+    title: "O cuidado certo\ncomeça no seu ritmo.",
+    body: "Encontre clínicas por especialidade e localização. Explore com calma, sem precisar criar uma conta.",
+    action: "Explorar clínicas",
     href: "/clinicas",
     icon: MapPin,
     bot: "thinking",
   },
   {
     eyebrow: "Escolha com liberdade",
-    title: "Um horÃ¡rio que\ncabe na sua vida.",
-    body: "Veja os horÃ¡rios disponÃ­veis e marque a consulta que faz sentido para o seu dia.",
-    action: "Encontrar meu horÃ¡rio",
+    title: "Um horário que\ncabe na sua vida.",
+    body: "Veja os horários disponíveis e marque a consulta que faz sentido para o seu dia.",
+    action: "Encontrar meu horário",
     href: "/clinicas",
     icon: CalendarCheck2,
     bot: "cool",
   },
   {
     eyebrow: "Acompanhe sem ansiedade",
-    title: "Sua vez se aproxima.\nVocÃª continua vivendo.",
-    body: "No dia, acompanhe a fila e a previsÃ£o de espera. Quando chegar a hora, vocÃª sabe.",
+    title: "Sua vez se aproxima.\nVocê continua vivendo.",
+    body: "No dia, acompanhe a fila e a previsão de espera. Quando chegar a hora, você sabe.",
     action: "Entenda como funciona",
     href: "/como-funciona",
     icon: Clock3,
@@ -123,13 +122,7 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
     <section ref={section} id="jornada-imersiva" className="v-odyssey" aria-label="A jornada do seu cuidado">
       <div className="v-odyssey-stage">
         <div className="v-odyssey-wash" aria-hidden="true" />
-        {!sceneReady && (
-          <div
-            className="v-odyssey-fallback"
-            aria-hidden="true"
-            style={{ backgroundImage: `linear-gradient(105deg, #061b4f99 4%, transparent 48%, #d4f0ff60 100%), url("${earthIllustrationUrl}")` }}
-          />
-        )}
+        <div className={`v-odyssey-render ${sceneReady ? "is-ready" : ""}`}>
         {enabled && (
           <Suspense fallback={null}>
             <Scene
@@ -143,10 +136,11 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
             />
           </Suspense>
         )}
+        </div>
         <button
           type="button"
           className={`v-odyssey-earth-control ${dragging ? "is-dragging" : ""}`}
-          aria-label="Girar o globo da Terra. Arraste ou use a roda do mouse; pelas setas, gire para cima, para baixo, Ã  esquerda ou Ã  direita. Home volta Ã  posiÃ§Ã£o inicial."
+          aria-label="Girar o globo da Terra. Arraste ou use a roda do mouse; pelas setas, gire para cima, para baixo, à esquerda ou à direita. Home volta à posição inicial."
           aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home"
           title="Arraste ou role para girar. Use as setas do teclado."
           onPointerDown={handlePointerDown}
@@ -184,7 +178,7 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
               <h2 id={`odyssey-title-${index}`}>{item.title.split("\n").map((line) => <span key={line}>{line}</span>)}</h2>
               <p>{item.body}</p>
               <Link to={item.href} className="v-odyssey-link">{item.action}<ArrowUpRight size={18} /></Link>
-              <div className="v-odyssey-mascot"><Bot expression={item.bot} /><span>O VEZZ acompanha vocÃª.</span></div>
+              <div className="v-odyssey-mascot"><Bot expression={item.bot} /><span>O VEZZ acompanha você.</span></div>
             </motion.div>
             <div className="v-odyssey-scene-caption" aria-hidden="true">
               <span>VEZZ / jornada do cuidado</span><strong>0{index + 1}</strong>
