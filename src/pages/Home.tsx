@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { db, onDbChange } from "../../js/lib/db.js";
 import ClinicCard from "../components/ClinicCard";
-import HeroRobot from "../components/HeroRobot";
 import ImmersiveStory from "../components/ImmersiveStory";
 import Journey from "../components/Journey";
 import Bot from "../components/Bot";
@@ -130,7 +129,6 @@ export default function Home({ session }: { session: Session | null }) {
               <span>Pesquise sem criar uma conta</span>
             </div>
           </motion.div>
-          <HeroRobot />
         </div>
         <div className="v-container v-hero-bottom">
           <span>Mais presença. Menos espera.</span>

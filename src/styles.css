@@ -374,45 +374,6 @@ h2:focus {
   padding-bottom: 52px;
   align-items: center;
 }
-.v-hero-robot-stage {
-  position: relative;
-  justify-self: center;
-  width: min(100%, 380px);
-  height: clamp(320px, 32vw, 380px);
-  isolation: isolate;
-}
-.v-hero-robot-canvas {
-  position: absolute !important;
-  z-index: 1;
-  inset: 0;
-  width: 100% !important;
-  height: 100% !important;
-  pointer-events: none;
-}
-.v-hero-robot-ground {
-  position: absolute;
-  z-index: 0;
-  bottom: 25px;
-  left: 50%;
-  width: 150px;
-  height: 20px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse, #010b2070 0%, #010b2026 52%, transparent 75%);
-  filter: blur(7px);
-  transform: translateX(-50%);
-}
-.v-hero-robot-caption {
-  position: absolute;
-  z-index: 2;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  color: #b9cee8;
-  font-size: 11px;
-  letter-spacing: .01em;
-  text-align: center;
-}
-
 .v-hero-copy {
   position: relative;
   z-index: 2;
@@ -2593,7 +2554,6 @@ h2:focus {
     padding-top: 44px;
     padding-bottom: 29px;
   }
-  .v-hero-robot-stage { height: 292px; }
   .v-hero h1 {
     font-size: clamp(65px, 12vw, 88px);
     line-height: 1;
@@ -3191,7 +3151,6 @@ h2:focus {
   .v-hero-copy > p {
     font-size: 16px;
   }
-  .v-hero-robot-stage { height: 264px; }
   .v-stage-tabs button {
     padding-inline: 8px;
     gap: 4px;
