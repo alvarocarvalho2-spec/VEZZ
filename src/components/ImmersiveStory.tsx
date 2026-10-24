@@ -40,9 +40,16 @@ const chapters = [
 
 const ScrollScene = lazy(() => import("./ScrollScene"));
 
-function smoothstep(start: number, end: number, value: number) {
+function easeOutCubic(start: number, end: number, value: number) {
   const progress = Math.max(0, Math.min(1, (value - start) / (end - start)));
-  return progress * progress * (3 - 2 * progress);
+  return 1 - (1 - progress) ** 3;
+}
+
+function getGlobeTimeline(progress: number) {
+  return {
+    entrance: easeOutCubic(0, 0.07, progress),
+    exit: easeOutCubic(0.84, 0.93, progress),
+  };
 }
 
 export default function ImmersiveStory({ locations }: { locations: MapLocation[] }) {
@@ -67,24 +74,21 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
   });
   const globeOpacity = useTransform(scrollYProgress, (progress) => {
     if (reduce) return 1;
-    const entrance = smoothstep(0, 0.12, progress);
-    const exit = smoothstep(0.88, 1, progress);
+    const { entrance, exit } = getGlobeTimeline(progress);
     return entrance * (1 - exit);
   });
   const globeScale = useTransform(scrollYProgress, (progress) => {
     if (reduce) return 1;
-    const entrance = smoothstep(0, 0.12, progress);
-    const exit = smoothstep(0.88, 1, progress);
-    return 0.78 + entrance * 0.22 - exit * 0.22;
+    const { entrance, exit } = getGlobeTimeline(progress);
+    return 0.84 + entrance * 0.16 - exit * 0.14;
   });
   const globeOffset = useTransform(scrollYProgress, (progress) => {
     if (reduce) return 0;
-    const entrance = smoothstep(0, 0.12, progress);
-    const exit = smoothstep(0.88, 1, progress);
-    return (1 - entrance) * 28 + exit * 24;
+    const { entrance, exit } = getGlobeTimeline(progress);
+    return (1 - entrance) * 22 + exit * 18;
   });
   const globeVisibility = useTransform(scrollYProgress, (progress) => (
-    reduce || (progress > 0.005 && progress < 0.995) ? "visible" : "hidden"
+    reduce || (progress > 0.002 && progress < 0.94) ? "visible" : "hidden"
   ));
 
   useEffect(() => {
