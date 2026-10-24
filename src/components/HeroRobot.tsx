@@ -1,67 +1,80 @@
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
-import Bot from "./Bot";
+
+export type RobotLook = { x: number; y: number };
+
+const HeroRobotScene = lazy(() => import("./HeroRobotScene"));
 
 export default function HeroRobot() {
-  const rig = useRef<HTMLDivElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  const look = useRef<RobotLook>({ x: 0, y: 0 });
+  const [active, setActive] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
   const reduceMotion = useReducedMotion() ?? false;
 
   useEffect(() => {
-    const hero = rig.current?.closest(".v-hero") as HTMLElement | null;
-    if (!hero || reduceMotion) return;
+    const element = stage.current;
+    const hero = element?.closest<HTMLElement>(".v-hero");
+    if (!element || !hero) return;
 
-    const resetGaze = () => {
-      rig.current?.style.setProperty("--robot-body-yaw", "0deg");
-      rig.current?.style.setProperty("--robot-head-yaw", "0deg");
-      rig.current?.style.setProperty("--robot-head-pitch", "0deg");
-    };
-    const followPointer = (event: globalThis.PointerEvent) => {
-      if (event.pointerType === "touch" || !rig.current) return;
-
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch" || reduceMotion) return;
       const bounds = hero.getBoundingClientRect();
-      const horizontal = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width) * 2 - 1));
-      const vertical = Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height) * 2 - 1));
-
-      rig.current.style.setProperty("--robot-body-yaw", `${horizontal * 10}deg`);
-      rig.current.style.setProperty("--robot-head-yaw", `${horizontal * 24}deg`);
-      rig.current.style.setProperty("--robot-head-pitch", `${vertical * 8}deg`);
+      look.current = {
+        x: Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width) * 2 - 1)),
+        y: Math.max(-1, Math.min(1, 1 - ((event.clientY - bounds.top) / bounds.height) * 2)),
+      };
     };
+    const resetLook = () => { look.current = { x: 0, y: 0 }; };
 
-    hero.addEventListener("pointermove", followPointer);
-    hero.addEventListener("pointerleave", resetGaze);
+    hero.addEventListener("pointermove", onPointerMove);
+    hero.addEventListener("pointerleave", resetLook);
     return () => {
-      hero.removeEventListener("pointermove", followPointer);
-      hero.removeEventListener("pointerleave", resetGaze);
+      hero.removeEventListener("pointermove", onPointerMove);
+      hero.removeEventListener("pointerleave", resetLook);
     };
   }, [reduceMotion]);
 
+  useEffect(() => {
+    const element = stage.current;
+    if (!element) return;
+    let loadTimer: number | undefined;
+    let sceneLoaded = false;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setActive(entry.isIntersecting);
+        if (entry.isIntersecting && !sceneLoaded && loadTimer === undefined) {
+          loadTimer = window.setTimeout(() => {
+            sceneLoaded = true;
+            setSceneReady(true);
+          }, 240);
+        } else if (!entry.isIntersecting && loadTimer !== undefined) {
+          window.clearTimeout(loadTimer);
+          loadTimer = undefined;
+        }
+      },
+      { rootMargin: "80px 0px" },
+    );
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      if (loadTimer !== undefined) window.clearTimeout(loadTimer);
+    };
+  }, []);
+
   return (
     <div
+      ref={stage}
       className="v-hero-robot-stage"
       aria-hidden="true"
       data-reduced-motion={reduceMotion}
     >
       <span className="v-hero-robot-ground" />
-      <div ref={rig} className="v-hero-robot-rig">
-        <div className="v-hero-robot-figure">
-          <span className="v-hero-robot-neck" />
-          <span className="v-hero-robot-leg is-left"><i /></span>
-          <span className="v-hero-robot-leg is-right"><i /></span>
-          <span className="v-hero-robot-boot is-left" />
-          <span className="v-hero-robot-boot is-right" />
-          <span className="v-hero-robot-arm is-left"><i /></span>
-          <span className="v-hero-robot-arm is-right"><i /></span>
-          <span className="v-hero-robot-hand is-left" />
-          <span className="v-hero-robot-hand is-right" />
-          <span className="v-hero-robot-torso">
-            <span className="v-hero-robot-chest-mark">VEZZ</span>
-            <i className="v-hero-robot-status-light" />
-          </span>
-          <div className="v-hero-robot-head">
-            <Bot expression="joy" />
-          </div>
-        </div>
-      </div>
+      {sceneReady && (
+        <Suspense fallback={null}>
+          <HeroRobotScene look={look} active={active} reduceMotion={reduceMotion} />
+        </Suspense>
+      )}
       <span className="v-hero-robot-caption">O cuidado ganha movimento.</span>
     </div>
   );
