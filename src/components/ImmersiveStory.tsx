@@ -163,7 +163,7 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
         />
         <div className="v-odyssey-markers" role="group" aria-label="Localizações de clínicas no globo">
           {locations.map((location) => {
-            const cityNames = location.cities.join(", ");
+            const stateLabel = `${location.stateName} (${location.uf})`;
             const count = location.clinics.length;
             return (
               <button
@@ -175,8 +175,8 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
                 type="button"
                 className={`v-odyssey-marker ${activeLocationKey === location.key ? "is-active" : ""}`}
                 style={{ visibility: "hidden" }}
-                aria-label={`Ver ${count} ${count === 1 ? "clínica" : "clínicas"} em ${cityNames}`}
-                title={`${cityNames} · ${count} ${count === 1 ? "clínica" : "clínicas"}`}
+                aria-label={`Ver ${count} ${count === 1 ? "clínica" : "clínicas"} em ${stateLabel}`}
+                title={`${stateLabel} · ${count} ${count === 1 ? "clínica" : "clínicas"}`}
                 onPointerEnter={() => setActiveLocationKey(location.key)}
                 onPointerLeave={() => setActiveLocationKey((active) => active === location.key ? null : active)}
                 onFocus={() => setActiveLocationKey(location.key)}
@@ -187,7 +187,7 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
                 }}
               >
                 <MapPin size={20} strokeWidth={2.2} aria-hidden="true" />
-                <span aria-hidden="true">{cityNames}</span>
+                <span aria-hidden="true">{location.uf}</span>
               </button>
             );
           })}
@@ -236,7 +236,7 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
 
 function ClinicLocationDialog({ location, onClose }: { location: MapLocation; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const cityNames = location.cities.join(" · ");
+  const stateLabel = `${location.stateName} (${location.uf})`;
 
   useEffect(() => {
     const element = dialog.current;
@@ -257,8 +257,8 @@ function ClinicLocationDialog({ location, onClose }: { location: MapLocation; on
     >
       <header className="v-location-dialog-head">
         <div>
-          <span>Clínicas na região</span>
-          <h2 id="clinic-location-title">{cityNames}</h2>
+          <span>Clínicas no estado</span>
+          <h2 id="clinic-location-title">{stateLabel}</h2>
         </div>
         <button type="button" data-location-close className="v-location-dialog-close" aria-label="Fechar informações das clínicas" onClick={() => dialog.current?.close()}>
           <X size={20} aria-hidden="true" />

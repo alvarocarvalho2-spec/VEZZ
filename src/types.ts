@@ -12,5 +12,5 @@ export type Clinic = {
   descricao: string;
   foto?: string;
   especialidades: string[];
-  endereco?: { bairro?: string; cidade?: string };
+  endereco?: { bairro?: string; cidade?: string; cep?: string; uf?: string; estado?: string };
 };

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { MapPin, Search, SlidersHorizontal, X } from "lucide-react";
-import { db } from "../../js/lib/db.js";
+import { db, onDbChange } from "../../js/lib/db.js";
 import ClinicCard from "../components/ClinicCard";
 import Bot from "../components/Bot";
 import type { Clinic } from "../types";
@@ -10,34 +10,76 @@ export default function Clinics() {
   const [params, setParams] = useSearchParams();
   const q = params.get("q") || "",
     local = params.get("local") || "";
-  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [allClinics, setAllClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const clinics = useMemo(() => {
+    const query = q.trim().toLocaleLowerCase("pt-BR");
+    const place = local.trim().toLocaleLowerCase("pt-BR");
+
+    return allClinics.filter((clinic) => {
+      const city = (clinic.endereco?.cidade || "").toLocaleLowerCase("pt-BR");
+      const neighborhood = (clinic.endereco?.bairro || "").toLocaleLowerCase("pt-BR");
+      const searchable = [
+        clinic.nome,
+        clinic.descricao,
+        ...(clinic.especialidades || []),
+        neighborhood,
+        city,
+      ].join(" ").toLocaleLowerCase("pt-BR");
+
+      return (!query || searchable.includes(query))
+        && (!place || city.includes(place) || neighborhood.includes(place));
+    });
+  }, [allClinics, q, local]);
+  const specialties = useMemo(() => {
+    const unique = new Map<string, string>();
+    allClinics.forEach((clinic) => {
+      (clinic.especialidades || []).forEach((value) => {
+        if (typeof value !== "string") return;
+        const specialty = value.trim();
+        if (!specialty) return;
+        const key = specialty.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+        if (!unique.has(key)) unique.set(key, specialty);
+      });
+    });
+    return [...unique.values()].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+  }, [allClinics]);
   useEffect(() => {
     let disposed = false;
+    let request = 0;
     setLoading(true);
     setError("");
-    Promise.resolve()
-      .then(() => db().listClinics({ q, local }))
-      .then((list: Clinic[]) => {
-        if (!disposed) setClinics(list);
-      })
-      .catch(() => {
-        if (!disposed)
-          setError("Não foi possível carregar as clínicas. Tente novamente.");
-      })
-      .finally(() => {
-        if (!disposed) setLoading(false);
-      });
+    const loadClinics = () => {
+      const currentRequest = ++request;
+      setError("");
+      Promise.resolve()
+        .then(() => db().listClinics())
+        .then((list: Clinic[]) => {
+          if (!disposed && request === currentRequest) setAllClinics(list);
+        })
+        .catch(() => {
+          if (!disposed && request === currentRequest)
+            setError("Não foi possível carregar as clínicas. Tente novamente.");
+        })
+        .finally(() => {
+          if (!disposed && request === currentRequest) setLoading(false);
+        });
+    };
+    loadClinics();
+    const unsubscribe = onDbChange((reason: string) => {
+      if (reason === "clinic" || reason === "persist") loadClinics();
+    });
     document.title = "Encontre uma clínica · VEZZ";
     document
       .querySelector<HTMLElement>("main h1")
       ?.focus({ preventScroll: true });
     return () => {
       disposed = true;
+      unsubscribe();
     };
-  }, [q, local, retry]);
+  }, [retry]);
   return (
     <main className="v-clinics-page">
       <section className="v-clinics-heading">
@@ -115,13 +157,7 @@ export default function Clinics() {
           role="group"
           aria-label="Filtrar por especialidade"
         >
-          {[
-            "Todas",
-            "Clínica Geral",
-            "Cardiologia",
-            "Pediatria",
-            "Dermatologia",
-          ].map((specialty) => (
+          {["Todas", ...specialties].map((specialty) => (
             <button
               key={specialty}
               aria-pressed={q === (specialty === "Todas" ? "" : specialty)}

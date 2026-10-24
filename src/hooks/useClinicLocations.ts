@@ -1,196 +1,144 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { Clinic } from '../types';
 
-type Coordinates = { latitude: number; longitude: number };
-type CityLocation = {
-  city: string;
-  clinics: Clinic[];
-  point: { x: number; y: number };
+type StateCode =
+  | 'AC' | 'AL' | 'AP' | 'AM' | 'BA' | 'CE' | 'DF' | 'ES' | 'GO'
+  | 'MA' | 'MT' | 'MS' | 'MG' | 'PA' | 'PB' | 'PR' | 'PE' | 'PI'
+  | 'RJ' | 'RN' | 'RS' | 'RO' | 'RR' | 'SC' | 'SP' | 'SE' | 'TO';
+
+type StateDefinition = {
+  name: string;
   latitude: number;
   longitude: number;
 };
+
 export type MapLocation = {
-  key: string;
-  cities: string[];
+  key: StateCode;
+  uf: StateCode;
+  stateName: string;
   clinics: Clinic[];
-  x: number;
-  y: number;
   latitude: number;
   longitude: number;
 };
 
-const CITY_COORDINATES: Record<string, Coordinates> = {
-  "aracaju": { latitude: -10.91, longitude: -37.07 },
-  "belem": { latitude: -1.45, longitude: -48.49 },
-  "belo horizonte": { latitude: -19.92, longitude: -43.94 },
-  "boa vista": { latitude: 2.82, longitude: -60.67 },
-  "brasilia": { latitude: -15.79, longitude: -47.88 },
-  "caxias do sul": { latitude: -29.17, longitude: -51.18 },
-  "campina grande": { latitude: -7.23, longitude: -35.88 },
-  "campinas": { latitude: -22.91, longitude: -47.06 },
-  "campo grande": { latitude: -20.47, longitude: -54.62 },
-  "caruaru": { latitude: -8.28, longitude: -35.97 },
-  "crato": { latitude: -7.23, longitude: -39.41 },
-  "cuiaba": { latitude: -15.60, longitude: -56.10 },
-  "curitiba": { latitude: -25.43, longitude: -49.27 },
-  "foz do iguacu": { latitude: -25.55, longitude: -54.59 },
-  "florianopolis": { latitude: -27.59, longitude: -48.55 },
-  "fortaleza": { latitude: -3.73, longitude: -38.53 },
-  "goiania": { latitude: -16.68, longitude: -49.25 },
-  "joao pessoa": { latitude: -7.12, longitude: -34.86 },
-  "joinville": { latitude: -26.30, longitude: -48.85 },
-  "juazeiro do norte": { latitude: -7.21, longitude: -39.31 },
-  "londrina": { latitude: -23.31, longitude: -51.16 },
-  "maceio": { latitude: -9.65, longitude: -35.71 },
-  "macapa": { latitude: 0.03, longitude: -51.07 },
-  "manaus": { latitude: -3.12, longitude: -60.02 },
-  "maringa": { latitude: -23.43, longitude: -51.94 },
-  "mossoro": { latitude: -5.19, longitude: -37.34 },
-  "natal": { latitude: -5.79, longitude: -35.21 },
-  "niteroi": { latitude: -22.88, longitude: -43.10 },
-  "palmas": { latitude: -10.18, longitude: -48.33 },
-  "petrolina": { latitude: -9.39, longitude: -40.50 },
-  "porto alegre": { latitude: -30.03, longitude: -51.23 },
-  "porto velho": { latitude: -8.76, longitude: -63.90 },
-  "recife": { latitude: -8.05, longitude: -34.88 },
-  "ribeirao preto": { latitude: -21.17, longitude: -47.81 },
-  "rio branco": { latitude: -9.97, longitude: -67.81 },
-  "rio de janeiro": { latitude: -22.91, longitude: -43.17 },
-  "salvador": { latitude: -12.97, longitude: -38.50 },
-  "santos": { latitude: -23.96, longitude: -46.33 },
-  "sao luis": { latitude: -2.53, longitude: -44.30 },
-  "sao paulo": { latitude: -23.55, longitude: -46.63 },
-  "sao jose dos campos": { latitude: -23.19, longitude: -45.88 },
-  "sobral": { latitude: -3.69, longitude: -40.35 },
-  "teresina": { latitude: -5.09, longitude: -42.80 },
-  "uberlandia": { latitude: -18.91, longitude: -48.27 },
-  "vitoria": { latitude: -20.32, longitude: -40.34 },
+const STATE_LOCATIONS: Record<StateCode, StateDefinition> = {
+  AC: { name: 'Acre', latitude: -9.97499, longitude: -67.8243 },
+  AL: { name: 'Alagoas', latitude: -9.66599, longitude: -35.735 },
+  AP: { name: 'Amapá', latitude: 0.0349, longitude: -51.0694 },
+  AM: { name: 'Amazonas', latitude: -3.119, longitude: -60.0217 },
+  BA: { name: 'Bahia', latitude: -12.9777, longitude: -38.5016 },
+  CE: { name: 'Ceará', latitude: -3.7319, longitude: -38.5267 },
+  DF: { name: 'Distrito Federal', latitude: -15.7939, longitude: -47.8828 },
+  ES: { name: 'Espírito Santo', latitude: -20.3155, longitude: -40.3128 },
+  GO: { name: 'Goiás', latitude: -16.6869, longitude: -49.2648 },
+  MA: { name: 'Maranhão', latitude: -2.5307, longitude: -44.3068 },
+  MT: { name: 'Mato Grosso', latitude: -15.601, longitude: -56.0974 },
+  MS: { name: 'Mato Grosso do Sul', latitude: -20.4697, longitude: -54.6201 },
+  MG: { name: 'Minas Gerais', latitude: -19.9167, longitude: -43.9345 },
+  PA: { name: 'Pará', latitude: -1.4558, longitude: -48.4902 },
+  PB: { name: 'Paraíba', latitude: -7.1195, longitude: -34.845 },
+  PR: { name: 'Paraná', latitude: -25.4284, longitude: -49.2733 },
+  PE: { name: 'Pernambuco', latitude: -8.0476, longitude: -34.877 },
+  PI: { name: 'Piauí', latitude: -5.0919, longitude: -42.8034 },
+  RJ: { name: 'Rio de Janeiro', latitude: -22.9068, longitude: -43.1729 },
+  RN: { name: 'Rio Grande do Norte', latitude: -5.7793, longitude: -35.2009 },
+  RS: { name: 'Rio Grande do Sul', latitude: -30.0346, longitude: -51.2177 },
+  RO: { name: 'Rondônia', latitude: -8.7608, longitude: -63.8999 },
+  RR: { name: 'Roraima', latitude: 2.8235, longitude: -60.6758 },
+  SC: { name: 'Santa Catarina', latitude: -27.5954, longitude: -48.548 },
+  SP: { name: 'São Paulo', latitude: -23.5505, longitude: -46.6333 },
+  SE: { name: 'Sergipe', latitude: -10.9472, longitude: -37.0731 },
+  TO: { name: 'Tocantins', latitude: -10.184, longitude: -48.3336 },
 };
 
-function normalizeCity(city: string) {
-  return city
-    .replace(/\s*(?:,|\/|-)\s*[a-z]{2}$/i, "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLocaleLowerCase("pt-BR");
+type CepRange = { first: number; last: number; uf: StateCode };
+
+// Faixas nacionais de CEP; RR e AM, assim como DF e GO, são separados por subfaixas.
+const CEP_RANGES: CepRange[] = [
+  { first: 1000, last: 19999, uf: 'SP' },
+  { first: 20000, last: 28999, uf: 'RJ' },
+  { first: 29000, last: 29999, uf: 'ES' },
+  { first: 30000, last: 39999, uf: 'MG' },
+  { first: 40000, last: 48999, uf: 'BA' },
+  { first: 49000, last: 49999, uf: 'SE' },
+  { first: 50000, last: 56999, uf: 'PE' },
+  { first: 57000, last: 57999, uf: 'AL' },
+  { first: 58000, last: 58999, uf: 'PB' },
+  { first: 59000, last: 59999, uf: 'RN' },
+  { first: 60000, last: 63999, uf: 'CE' },
+  { first: 64000, last: 64999, uf: 'PI' },
+  { first: 65000, last: 65999, uf: 'MA' },
+  { first: 66000, last: 68899, uf: 'PA' },
+  { first: 68900, last: 68999, uf: 'AP' },
+  { first: 69000, last: 69299, uf: 'AM' },
+  { first: 69300, last: 69399, uf: 'RR' },
+  { first: 69400, last: 69899, uf: 'AM' },
+  { first: 69900, last: 69999, uf: 'AC' },
+  { first: 70000, last: 72799, uf: 'DF' },
+  { first: 72800, last: 72999, uf: 'GO' },
+  { first: 73000, last: 73699, uf: 'DF' },
+  { first: 73700, last: 76799, uf: 'GO' },
+  { first: 76800, last: 76999, uf: 'RO' },
+  { first: 77000, last: 77999, uf: 'TO' },
+  { first: 78000, last: 78899, uf: 'MT' },
+  { first: 79000, last: 79999, uf: 'MS' },
+  { first: 80000, last: 87999, uf: 'PR' },
+  { first: 88000, last: 89999, uf: 'SC' },
+  { first: 90000, last: 99999, uf: 'RS' },
+];
+
+function normalizeState(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
 }
 
-function project({ latitude, longitude }: Coordinates) {
-  const radius = 156;
-  const latitudeRadians = (latitude * Math.PI) / 180;
-  return {
-    x: 280 + (longitude / 180) * radius * Math.cos(latitudeRadians),
-    y: 185 - (latitude / 90) * radius,
-  };
+function getStateFromPostalCode(postalCode?: string) {
+  const digits = String(postalCode || '').replace(/\D/g, '');
+  if (digits.length !== 8) return null;
+
+  const prefix = Number(digits.slice(0, 5));
+  return CEP_RANGES.find(({ first, last }) => prefix >= first && prefix <= last)?.uf ?? null;
 }
 
-function buildLocations(clinics: Clinic[], cityCoordinates: Record<string, Coordinates>) {
-  const byCity = new Map<string, CityLocation>();
-  const unmapped: Clinic[] = [];
+function getStateFromAddress(clinic: Clinic): StateCode | null {
+  const fromPostalCode = getStateFromPostalCode(clinic.endereco?.cep);
+  if (fromPostalCode) return fromPostalCode;
+
+  const explicitState = clinic.endereco?.uf || clinic.endereco?.estado;
+  if (!explicitState) return null;
+
+  const normalized = normalizeState(explicitState);
+  return (Object.entries(STATE_LOCATIONS) as [StateCode, StateDefinition][]).find(
+    ([uf, state]) => normalized === normalizeState(uf) || normalized === normalizeState(state.name),
+  )?.[0] ?? null;
+}
+
+function buildLocations(clinics: Clinic[]): MapLocation[] {
+  const byState = new Map<StateCode, MapLocation>();
 
   for (const clinic of clinics) {
-    const city = clinic.endereco?.cidade?.trim();
-    if (!city) {
-      unmapped.push(clinic);
+    const uf = getStateFromAddress(clinic);
+    if (!uf) continue;
+
+    const existing = byState.get(uf);
+    if (existing) {
+      existing.clinics.push(clinic);
       continue;
     }
 
-    const coordinates = cityCoordinates[normalizeCity(city)];
-    if (!coordinates) {
-      unmapped.push(clinic);
-      continue;
-    }
-
-    const key = normalizeCity(city);
-    const existing = byCity.get(key);
-    if (existing) existing.clinics.push(clinic);
-    else byCity.set(key, {
-      city,
+    const state = STATE_LOCATIONS[uf];
+    byState.set(uf, {
+      key: uf,
+      uf,
+      stateName: state.name,
       clinics: [clinic],
-      point: project(coordinates),
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
+      latitude: state.latitude,
+      longitude: state.longitude,
     });
   }
 
-  const clusters: MapLocation[] = [];
-  for (const location of byCity.values()) {
-    const cluster = clusters.find(
-      (candidate) => Math.hypot(candidate.x - location.point.x, candidate.y - location.point.y) < 18,
-    );
-    if (!cluster) {
-      clusters.push({
-        key: normalizeCity(location.city),
-        cities: [location.city],
-        clinics: [...location.clinics],
-        x: location.point.x,
-        y: location.point.y,
-        latitude: location.latitude,
-        longitude: location.longitude,
-      });
-      continue;
-    }
-
-    const total = cluster.clinics.length + location.clinics.length;
-    cluster.x =
-      (cluster.x * cluster.clinics.length + location.point.x * location.clinics.length) / total;
-    cluster.y =
-      (cluster.y * cluster.clinics.length + location.point.y * location.clinics.length) / total;
-    cluster.latitude =
-      (cluster.latitude * cluster.clinics.length + location.latitude * location.clinics.length) / total;
-    cluster.longitude =
-      (cluster.longitude * cluster.clinics.length + location.longitude * location.clinics.length) / total;
-    cluster.cities.push(location.city);
-    cluster.clinics.push(...location.clinics);
-  }
-
-  return {
-    locations: clusters.map((location) => ({
-      ...location,
-      key: location.cities.map(normalizeCity).sort().join("+")
-    })),
-    unmapped,
-  };
+  return [...byState.values()];
 }
 
 export function useClinicLocations(clinics: Clinic[]) {
-  const [cityCoordinates, setCityCoordinates] = useState(CITY_COORDINATES);
-
-  useEffect(() => {
-    let active = true;
-
-    fetch(`${import.meta.env.BASE_URL}assets/data/municipios-brasileiros.json`)
-      .then(async (response) => {
-        if (!response.ok) return [];
-        return (await response.json()) as [string, number, number][];
-      })
-      .then((rows) => {
-        if (!active || !Array.isArray(rows)) return;
-
-        const coordinates = { ...CITY_COORDINATES };
-        for (const row of rows) {
-          if (
-            !Array.isArray(row) ||
-            typeof row[0] !== "string" ||
-            typeof row[1] !== "number" ||
-            typeof row[2] !== "number"
-          ) continue;
-
-          const city = normalizeCity(row[0]);
-          if (!coordinates[city]) coordinates[city] = { latitude: row[1], longitude: row[2] };
-        }
-        setCityCoordinates(coordinates);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return useMemo(
-    () => buildLocations(clinics, cityCoordinates).locations,
-    [clinics, cityCoordinates],
-  );
+  return useMemo(() => buildLocations(clinics), [clinics]);
 }
