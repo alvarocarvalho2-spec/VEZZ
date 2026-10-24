@@ -45,10 +45,17 @@ function easeOutCubic(start: number, end: number, value: number) {
   return 1 - (1 - progress) ** 3;
 }
 
-function getGlobeTimeline(progress: number) {
+function easeInOutCubic(start: number, end: number, value: number) {
+  const progress = Math.max(0, Math.min(1, (value - start) / (end - start)));
+  return progress < 0.5
+    ? 4 * progress ** 3
+    : 1 - ((-2 * progress + 2) ** 3) / 2;
+}
+
+function getGlobeTimeline(entryProgress: number, storyProgress: number) {
   return {
-    entrance: easeOutCubic(0, 0.07, progress),
-    exit: easeOutCubic(0.84, 0.93, progress),
+    entrance: easeOutCubic(0.08, 0.88, entryProgress),
+    exit: easeInOutCubic(0.88, 1, storyProgress),
   };
 }
 
@@ -72,18 +79,22 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
     target: section,
     offset: ["start start", "end end"],
   });
-  const globeOpacity = useTransform(scrollYProgress, (progress) => {
+  const { scrollYProgress: globeEntryProgress } = useScroll({
+    target: section,
+    offset: ["start end", "start start"],
+  });
+  const globeOpacity = useTransform<number, number>([globeEntryProgress, scrollYProgress], ([entryProgress, storyProgress]) => {
     if (reduce) return 1;
-    const { entrance, exit } = getGlobeTimeline(progress);
+    const { entrance, exit } = getGlobeTimeline(entryProgress, storyProgress);
     return entrance * (1 - exit);
   });
-  const globeScale = useTransform(scrollYProgress, (progress) => {
+  const globeScale = useTransform<number, number>([globeEntryProgress, scrollYProgress], ([entryProgress, storyProgress]) => {
     if (reduce) return 1;
-    const { entrance, exit } = getGlobeTimeline(progress);
+    const { entrance, exit } = getGlobeTimeline(entryProgress, storyProgress);
     return 0.84 + entrance * 0.16 - exit * 0.14;
   });
-  const globeVisibility = useTransform(scrollYProgress, (progress) => (
-    reduce || (progress > 0.002 && progress < 0.94) ? "visible" : "hidden"
+  const globeVisibility = useTransform<number, "visible" | "hidden">([globeEntryProgress, scrollYProgress], ([entryProgress, storyProgress]) => (
+    reduce || (entryProgress > 0.08 && storyProgress < 1) ? "visible" : "hidden"
   ));
 
   useEffect(() => {
