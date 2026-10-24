@@ -197,6 +197,7 @@ function Starfield() {
 
 function Earth({
   progress,
+  globeScale,
   locations,
   active,
   reduceMotion,
@@ -205,6 +206,7 @@ function Earth({
   onReady,
 }: {
   progress: MotionValue<number>;
+  globeScale: MotionValue<number>;
   locations: MapLocation[];
   active: boolean;
   reduceMotion: boolean;
@@ -246,7 +248,7 @@ function Earth({
     const targetX = startX + Math.sin(p * Math.PI * 2) * (mobile ? 0.12 : 0.28) - p * (mobile ? 0.08 : 0.22);
     const targetY = (mobile ? -1.18 : 0.02) + Math.sin(p * Math.PI * 2) * (mobile ? 0.1 : 0.18);
     const baseScale = mobile ? 0.79 : 1.16;
-    const targetScale = baseScale + Math.sin(p * Math.PI) * (mobile ? 0.055 : 0.14);
+    const targetScale = (baseScale + Math.sin(p * Math.PI) * (mobile ? 0.055 : 0.14)) * globeScale.get();
     const targetRotationY = -0.68 + p * 1.52 + interaction.current.yaw + Math.sin(clock.elapsedTime * 0.06) * (reduceMotion ? 0 : 0.012);
     const targetRotationX = 0.06 + Math.sin(p * Math.PI * 2) * (reduceMotion ? 0 : 0.07) + interaction.current.pitch;
 
@@ -254,7 +256,7 @@ function Earth({
       camera.position.set(cameraX, cameraY, cameraZ);
       camera.lookAt(0, 0, 0);
       composition.current.position.set(startX, mobile ? -1.18 : 0.02, 0);
-      composition.current.scale.setScalar(baseScale);
+      composition.current.scale.setScalar(targetScale);
       planet.current.rotation.set(targetRotationX, targetRotationY, 0.13);
     } else {
       camera.position.x = MathUtils.damp(camera.position.x, cameraX, 2, delta);
@@ -264,7 +266,7 @@ function Earth({
       composition.current.position.x = MathUtils.damp(composition.current.position.x, targetX, 2.1, delta);
       composition.current.position.y = MathUtils.damp(composition.current.position.y, targetY, 2.1, delta);
       composition.current.position.z = MathUtils.damp(composition.current.position.z, Math.sin(p * Math.PI) * 0.16, 2.1, delta);
-      composition.current.scale.setScalar(MathUtils.damp(composition.current.scale.x, targetScale, 2.1, delta));
+      composition.current.scale.setScalar(targetScale);
       planet.current.rotation.y = MathUtils.damp(planet.current.rotation.y, targetRotationY, 2.4, delta);
       planet.current.rotation.x = MathUtils.damp(planet.current.rotation.x, targetRotationX, 2.4, delta);
     }
@@ -315,6 +317,7 @@ function Earth({
 
 function SceneContent({
   progress,
+  globeScale,
   active,
   reduceMotion,
   interaction,
@@ -324,6 +327,7 @@ function SceneContent({
   onInvalidateReady,
 }: {
   progress: MotionValue<number>;
+  globeScale: MotionValue<number>;
   active: boolean;
   reduceMotion: boolean;
   interaction: MutableRefObject<EarthInteraction>;
@@ -346,6 +350,7 @@ function SceneContent({
       <directionalLight position={[-4, -1, -3]} intensity={0.3} color="#36a7bd" />
       <Earth
         progress={progress}
+        globeScale={globeScale}
         active={active}
         reduceMotion={reduceMotion}
         interaction={interaction}
@@ -359,6 +364,7 @@ function SceneContent({
 
 export default function ScrollScene({
   progress,
+  globeScale,
   active,
   reduceMotion,
   interaction,
@@ -368,6 +374,7 @@ export default function ScrollScene({
   onInvalidateReady,
 }: {
   progress: MotionValue<number>;
+  globeScale: MotionValue<number>;
   active: boolean;
   reduceMotion: boolean;
   interaction: MutableRefObject<EarthInteraction>;
@@ -387,6 +394,7 @@ export default function ScrollScene({
       <Suspense fallback={null}>
         <SceneContent
           progress={progress}
+          globeScale={globeScale}
           active={active}
           reduceMotion={reduceMotion}
           interaction={interaction}

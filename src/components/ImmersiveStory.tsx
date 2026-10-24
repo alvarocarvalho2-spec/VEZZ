@@ -82,11 +82,6 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
     const { entrance, exit } = getGlobeTimeline(progress);
     return 0.84 + entrance * 0.16 - exit * 0.14;
   });
-  const globeOffset = useTransform(scrollYProgress, (progress) => {
-    if (reduce) return 0;
-    const { entrance, exit } = getGlobeTimeline(progress);
-    return (1 - entrance) * 22 + exit * 18;
-  });
   const globeVisibility = useTransform(scrollYProgress, (progress) => (
     reduce || (progress > 0.002 && progress < 0.94) ? "visible" : "hidden"
   ));
@@ -164,13 +159,14 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
         <div className="v-odyssey-wash" aria-hidden="true" />
         <motion.div
           className="v-odyssey-world"
-          style={{ opacity: globeOpacity, scale: globeScale, y: globeOffset, visibility: globeVisibility }}
+          style={{ opacity: globeOpacity, visibility: globeVisibility }}
         >
         <div className={`v-odyssey-render ${sceneReady ? "is-ready" : ""}`}>
         {enabled && (
           <Suspense fallback={null}>
             <Scene
               progress={scrollYProgress}
+              globeScale={globeScale}
               active={visible}
               reduceMotion={reduce}
               interaction={interaction}

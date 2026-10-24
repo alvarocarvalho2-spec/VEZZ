@@ -3854,8 +3854,7 @@ h2:focus {
   position: absolute;
   z-index: 1;
   inset: 0;
-  transform-origin: 63.5% 50%;
-  will-change: transform, opacity;
+  will-change: opacity;
 }
 .v-odyssey-render { position: absolute; inset: 0; opacity: 0; transition: opacity .45s ease; }
 .v-odyssey-render.is-ready { opacity: 1; }
@@ -3897,7 +3896,6 @@ h2:focus {
   .v-care-preview { width: min(100%, 400px); margin-inline: auto; padding: 16px; }
   .v-care-preview-top { gap: 8px; }
   .v-care-panel h2 { font-size: 20px; }
-  .v-odyssey-world { transform-origin: 50% 62%; }
   .v-care-tabs button { padding-inline: 4px; gap: 4px; font-size: 11px; }
   .v-odyssey-earth-control { top: 62%; left: 50%; width: min(52svh, 78vw, 360px); }
   .v-odyssey-earth-hint { top: calc(62% + min(35vw, 145px)); left: 50%; font-size: 9px; }
@@ -3906,12 +3904,10 @@ h2:focus {
   .v-odyssey-render, .v-care-sculpture-world { transition: none; }
 }
 @media (min-width: 768px) and (max-width: 959px) {
-  .v-odyssey-world { transform-origin: 70% 50%; }
   .v-odyssey-earth-control { left: 70%; width: min(54svh, 50vw, 430px); }
   .v-odyssey-earth-hint { left: 70%; }
 }
 @media (min-width: 768px) and (max-width: 959px) and (max-aspect-ratio: 1 / 1) {
-  .v-odyssey-world { transform-origin: 50% 62%; }
   .v-odyssey-earth-control { top: 62%; left: 50%; width: min(52svh, 78vw, 360px); }
   .v-odyssey-earth-hint { top: calc(62% + min(38vw, 180px)); left: 50%; }
 }
