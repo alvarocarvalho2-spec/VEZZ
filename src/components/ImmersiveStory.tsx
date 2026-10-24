@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type WheelEvent } from "react";
 import { createPortal } from "react-dom";
-import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { ArrowDown, ArrowUpRight, CalendarCheck2, Clock3, MapPin, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import Bot from "./Bot";
@@ -40,6 +40,11 @@ const chapters = [
 
 const ScrollScene = lazy(() => import("./ScrollScene"));
 
+function smoothstep(start: number, end: number, value: number) {
+  const progress = Math.max(0, Math.min(1, (value - start) / (end - start)));
+  return progress * progress * (3 - 2 * progress);
+}
+
 export default function ImmersiveStory({ locations }: { locations: MapLocation[] }) {
   const section = useRef<HTMLElement>(null);
   const markerElements = useRef(new Map<string, HTMLButtonElement>());
@@ -60,6 +65,27 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
     target: section,
     offset: ["start start", "end end"],
   });
+  const globeOpacity = useTransform(scrollYProgress, (progress) => {
+    if (reduce) return 1;
+    const entrance = smoothstep(0, 0.12, progress);
+    const exit = smoothstep(0.88, 1, progress);
+    return entrance * (1 - exit);
+  });
+  const globeScale = useTransform(scrollYProgress, (progress) => {
+    if (reduce) return 1;
+    const entrance = smoothstep(0, 0.12, progress);
+    const exit = smoothstep(0.88, 1, progress);
+    return 0.78 + entrance * 0.22 - exit * 0.22;
+  });
+  const globeOffset = useTransform(scrollYProgress, (progress) => {
+    if (reduce) return 0;
+    const entrance = smoothstep(0, 0.12, progress);
+    const exit = smoothstep(0.88, 1, progress);
+    return (1 - entrance) * 28 + exit * 24;
+  });
+  const globeVisibility = useTransform(scrollYProgress, (progress) => (
+    reduce || (progress > 0.005 && progress < 0.995) ? "visible" : "hidden"
+  ));
 
   useEffect(() => {
     if (!visible || enabled) return;
@@ -132,6 +158,10 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
     <section ref={section} id="jornada-imersiva" className="v-odyssey" aria-label="A jornada do seu cuidado">
       <div className="v-odyssey-stage">
         <div className="v-odyssey-wash" aria-hidden="true" />
+        <motion.div
+          className="v-odyssey-world"
+          style={{ opacity: globeOpacity, scale: globeScale, y: globeOffset, visibility: globeVisibility }}
+        >
         <div className={`v-odyssey-render ${sceneReady ? "is-ready" : ""}`}>
         {enabled && (
           <Suspense fallback={null}>
@@ -194,6 +224,7 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
         </div>
         <span className="v-odyssey-earth-hint" aria-hidden="true">Arraste ou role para girar</span>
         <div className="v-odyssey-grain" aria-hidden="true" />
+        </motion.div>
       </div>
       <div className="v-odyssey-rail" aria-hidden="true">
         <span>Seu cuidado, em movimento</span>
