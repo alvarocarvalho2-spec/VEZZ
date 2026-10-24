@@ -22,6 +22,7 @@ import earthIllustrationUrl from "../assets/earth/vezz-earth-illustration.svg";
 import type { MapLocation } from "../hooks/useClinicLocations";
 
 type EarthInteraction = { yaw: number; pitch: number };
+type MarkerElements = MutableRefObject<Map<string, HTMLButtonElement>>;
 const earthRadius = 1.25;
 const north = new Vector3(0, 1, 0);
 
@@ -200,6 +201,7 @@ function Earth({
   active,
   reduceMotion,
   interaction,
+  markerElements,
   onReady,
 }: {
   progress: MotionValue<number>;
@@ -207,14 +209,25 @@ function Earth({
   active: boolean;
   reduceMotion: boolean;
   interaction: MutableRefObject<EarthInteraction>;
+  markerElements: MarkerElements;
   onReady: () => void;
 }) {
   const composition = useRef<Group>(null);
   const planet = useRef<Group>(null);
   const rendered = useRef(false);
   const surfaceTexture = useLoader(TextureLoader, earthIllustrationUrl);
-  const { viewport, camera } = useThree();
+  const { viewport, camera, size } = useThree();
   const mobile = viewport.width < 6;
+  const markerPoints = useMemo(() => locations.map((location) => ({
+    key: location.key,
+    surface: latLngToVector(location.latitude, location.longitude, earthRadius + 0.013),
+    normal: latLngToVector(location.latitude, location.longitude, 1).normalize(),
+  })), [locations]);
+  const cameraPosition = useMemo(() => new Vector3(), []);
+  const markerWorldPosition = useMemo(() => new Vector3(), []);
+  const markerWorldNormal = useMemo(() => new Vector3(), []);
+  const markerToCamera = useMemo(() => new Vector3(), []);
+  const markerScreenPosition = useMemo(() => new Vector3(), []);
 
   useEffect(() => {
     surfaceTexture.colorSpace = SRGBColorSpace;
@@ -243,19 +256,41 @@ function Earth({
       composition.current.position.set(startX, mobile ? -1.18 : 0.02, 0);
       composition.current.scale.setScalar(baseScale);
       planet.current.rotation.set(targetRotationX, targetRotationY, 0.13);
-      return;
+    } else {
+      camera.position.x = MathUtils.damp(camera.position.x, cameraX, 2, delta);
+      camera.position.y = MathUtils.damp(camera.position.y, cameraY, 2, delta);
+      camera.position.z = MathUtils.damp(camera.position.z, cameraZ, 2, delta);
+      camera.lookAt(0, 0, 0);
+      composition.current.position.x = MathUtils.damp(composition.current.position.x, targetX, 2.1, delta);
+      composition.current.position.y = MathUtils.damp(composition.current.position.y, targetY, 2.1, delta);
+      composition.current.position.z = MathUtils.damp(composition.current.position.z, Math.sin(p * Math.PI) * 0.16, 2.1, delta);
+      composition.current.scale.setScalar(MathUtils.damp(composition.current.scale.x, targetScale, 2.1, delta));
+      planet.current.rotation.y = MathUtils.damp(planet.current.rotation.y, targetRotationY, 2.4, delta);
+      planet.current.rotation.x = MathUtils.damp(planet.current.rotation.x, targetRotationX, 2.4, delta);
     }
 
-    camera.position.x = MathUtils.damp(camera.position.x, cameraX, 2, delta);
-    camera.position.y = MathUtils.damp(camera.position.y, cameraY, 2, delta);
-    camera.position.z = MathUtils.damp(camera.position.z, cameraZ, 2, delta);
-    camera.lookAt(0, 0, 0);
-    composition.current.position.x = MathUtils.damp(composition.current.position.x, targetX, 2.1, delta);
-    composition.current.position.y = MathUtils.damp(composition.current.position.y, targetY, 2.1, delta);
-    composition.current.position.z = MathUtils.damp(composition.current.position.z, Math.sin(p * Math.PI) * 0.16, 2.1, delta);
-    composition.current.scale.setScalar(MathUtils.damp(composition.current.scale.x, targetScale, 2.1, delta));
-    planet.current.rotation.y = MathUtils.damp(planet.current.rotation.y, targetRotationY, 2.4, delta);
-    planet.current.rotation.x = MathUtils.damp(planet.current.rotation.x, targetRotationX, 2.4, delta);
+    camera.updateMatrixWorld();
+    composition.current.updateMatrixWorld(true);
+    planet.current.updateWorldMatrix(true, false);
+    camera.getWorldPosition(cameraPosition);
+    markerPoints.forEach((marker) => {
+      const element = markerElements.current.get(marker.key);
+      if (!element) return;
+
+      markerWorldPosition.copy(marker.surface)
+        .addScaledVector(marker.normal, 0.081)
+        .applyMatrix4(planet.current!.matrixWorld);
+      markerWorldNormal.copy(marker.normal).applyQuaternion(planet.current!.quaternion);
+      const inFront = markerWorldNormal.dot(markerToCamera.copy(cameraPosition).sub(markerWorldPosition).normalize()) > 0.06;
+      markerScreenPosition.copy(markerWorldPosition).project(camera);
+      const onScreen = markerScreenPosition.z >= -1 && markerScreenPosition.z <= 1
+        && markerScreenPosition.x >= -1.08 && markerScreenPosition.x <= 1.08
+        && markerScreenPosition.y >= -1.08 && markerScreenPosition.y <= 1.08;
+
+      element.style.visibility = inFront && onScreen ? "visible" : "hidden";
+      element.style.left = `${(markerScreenPosition.x + 1) * 0.5 * size.width}px`;
+      element.style.top = `${(1 - markerScreenPosition.y) * 0.5 * size.height}px`;
+    });
   });
 
   return (
@@ -284,6 +319,7 @@ function SceneContent({
   reduceMotion,
   interaction,
   locations,
+  markerElements,
   onReady,
   onInvalidateReady,
 }: {
@@ -292,6 +328,7 @@ function SceneContent({
   reduceMotion: boolean;
   interaction: MutableRefObject<EarthInteraction>;
   locations: MapLocation[];
+  markerElements: MarkerElements;
   onReady: () => void;
   onInvalidateReady: (invalidate: (() => void) | null) => void;
 }) {
@@ -312,6 +349,7 @@ function SceneContent({
         active={active}
         reduceMotion={reduceMotion}
         interaction={interaction}
+        markerElements={markerElements}
         locations={locations}
         onReady={onReady}
       />
@@ -325,6 +363,7 @@ export default function ScrollScene({
   reduceMotion,
   interaction,
   locations,
+  markerElements,
   onReady,
   onInvalidateReady,
 }: {
@@ -333,6 +372,7 @@ export default function ScrollScene({
   reduceMotion: boolean;
   interaction: MutableRefObject<EarthInteraction>;
   locations: MapLocation[];
+  markerElements: MarkerElements;
   onReady: () => void;
   onInvalidateReady: (invalidate: (() => void) | null) => void;
 }) {
@@ -350,6 +390,7 @@ export default function ScrollScene({
           active={active}
           reduceMotion={reduceMotion}
           interaction={interaction}
+          markerElements={markerElements}
           locations={locations}
           onReady={onReady}
           onInvalidateReady={onInvalidateReady}

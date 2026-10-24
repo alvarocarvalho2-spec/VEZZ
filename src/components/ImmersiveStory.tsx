@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type WheelEvent } from "react";
+import { createPortal } from "react-dom";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
-import { ArrowDown, ArrowUpRight, CalendarCheck2, Clock3, MapPin } from "lucide-react";
+import { ArrowDown, ArrowUpRight, CalendarCheck2, Clock3, MapPin, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import Bot from "./Bot";
 import type { MapLocation } from "../hooks/useClinicLocations";
@@ -41,6 +42,8 @@ const ScrollScene = lazy(() => import("./ScrollScene"));
 
 export default function ImmersiveStory({ locations }: { locations: MapLocation[] }) {
   const section = useRef<HTMLElement>(null);
+  const markerElements = useRef(new Map<string, HTMLButtonElement>());
+  const markerOpener = useRef<HTMLButtonElement | null>(null);
   const interaction = useRef<EarthInteraction>({ yaw: 0, pitch: 0 });
   const invalidateScene = useRef<(() => void) | null>(null);
   const drag = useRef<{ pointerId: number; x: number; y: number } | null>(null);
@@ -49,6 +52,9 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
   const [sceneReady, setSceneReady] = useState(false);
   const [visible, setVisible] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [activeLocationKey, setActiveLocationKey] = useState<string | null>(null);
+  const [selectedLocationKey, setSelectedLocationKey] = useState<string | null>(null);
+  const selectedLocation = locations.find((location) => location.key === selectedLocationKey) ?? null;
   const reduce = useReducedMotion() ?? false;
   const { scrollYProgress } = useScroll({
     target: section,
@@ -77,6 +83,10 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
   const handleSceneReady = useCallback(() => setSceneReady(true), []);
   const handleInvalidateReady = useCallback((invalidate: (() => void) | null) => {
     invalidateScene.current = invalidate;
+  }, []);
+  const closeLocation = useCallback(() => {
+    setSelectedLocationKey(null);
+    window.requestAnimationFrame(() => markerOpener.current?.focus({ preventScroll: true }));
   }, []);
   const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -131,6 +141,7 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
               reduceMotion={reduce}
               interaction={interaction}
               locations={locations}
+              markerElements={markerElements}
               onReady={handleSceneReady}
               onInvalidateReady={handleInvalidateReady}
             />
@@ -150,6 +161,37 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
           onWheel={handleWheel}
           onKeyDown={handleEarthKeyDown}
         />
+        <div className="v-odyssey-markers" role="group" aria-label="Localizações de clínicas no globo">
+          {locations.map((location) => {
+            const cityNames = location.cities.join(", ");
+            const count = location.clinics.length;
+            return (
+              <button
+                key={location.key}
+                ref={(element) => {
+                  if (element) markerElements.current.set(location.key, element);
+                  else markerElements.current.delete(location.key);
+                }}
+                type="button"
+                className={`v-odyssey-marker ${activeLocationKey === location.key ? "is-active" : ""}`}
+                style={{ visibility: "hidden" }}
+                aria-label={`Ver ${count} ${count === 1 ? "clínica" : "clínicas"} em ${cityNames}`}
+                title={`${cityNames} · ${count} ${count === 1 ? "clínica" : "clínicas"}`}
+                onPointerEnter={() => setActiveLocationKey(location.key)}
+                onPointerLeave={() => setActiveLocationKey((active) => active === location.key ? null : active)}
+                onFocus={() => setActiveLocationKey(location.key)}
+                onBlur={() => setActiveLocationKey((active) => active === location.key ? null : active)}
+                onClick={(event) => {
+                  markerOpener.current = event.currentTarget;
+                  setSelectedLocationKey(location.key);
+                }}
+              >
+                <MapPin size={20} strokeWidth={2.2} aria-hidden="true" />
+                <span aria-hidden="true">{cityNames}</span>
+              </button>
+            );
+          })}
+        </div>
         <span className="v-odyssey-earth-hint" aria-hidden="true">Arraste ou role para girar</span>
         <div className="v-odyssey-grain" aria-hidden="true" />
       </div>
@@ -187,6 +229,72 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
         </motion.article>
       ))}
       <div className="v-odyssey-end" aria-hidden="true"><ArrowDown size={17} /> E o seu dia continua.</div>
+      {selectedLocation && <ClinicLocationDialog location={selectedLocation} onClose={closeLocation} />}
     </section>
+  );
+}
+
+function ClinicLocationDialog({ location, onClose }: { location: MapLocation; onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const cityNames = location.cities.join(" · ");
+
+  useEffect(() => {
+    const element = dialog.current;
+    if (!element) return;
+    if (!element.open) element.showModal();
+    element.querySelector<HTMLButtonElement>("[data-location-close]")?.focus();
+  }, []);
+
+  return createPortal(
+    <dialog
+      ref={dialog}
+      className="v-clinic-location-dialog"
+      aria-labelledby="clinic-location-title"
+      onClose={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) dialog.current?.close();
+      }}
+    >
+      <header className="v-location-dialog-head">
+        <div>
+          <span>Clínicas na região</span>
+          <h2 id="clinic-location-title">{cityNames}</h2>
+        </div>
+        <button type="button" data-location-close className="v-location-dialog-close" aria-label="Fechar informações das clínicas" onClick={() => dialog.current?.close()}>
+          <X size={20} aria-hidden="true" />
+        </button>
+      </header>
+      <div className="v-location-dialog-content">
+        <p className="v-location-dialog-count">
+          {location.clinics.length} {location.clinics.length === 1 ? "clínica encontrada" : "clínicas encontradas"}
+        </p>
+        <div className="v-location-clinics">
+          {location.clinics.map((clinic) => {
+            const address = [clinic.endereco?.bairro, clinic.endereco?.cidade]
+              .filter(Boolean)
+              .join(", ");
+            return (
+              <article className="v-location-clinic" key={clinic.id_clinica}>
+                {clinic.foto ? <img src={clinic.foto} alt="" loading="lazy" /> : <div className="v-location-clinic-placeholder"><MapPin size={24} aria-hidden="true" /></div>}
+                <div className="v-location-clinic-info">
+                  <h3>{clinic.nome}</h3>
+                  {address && <p className="v-location-clinic-address">{address}</p>}
+                  {clinic.descricao && <p className="v-location-clinic-description">{clinic.descricao}</p>}
+                  {!!clinic.especialidades?.length && (
+                    <ul className="v-location-specialties" aria-label="Especialidades">
+                      {clinic.especialidades.map((specialty) => <li key={specialty}>{specialty}</li>)}
+                    </ul>
+                  )}
+                  <Link className="v-location-clinic-link" to={`/clinica/${encodeURIComponent(clinic.id_clinica)}`}>
+                    Ver clínica completa <ArrowUpRight size={16} aria-hidden="true" />
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </dialog>,
+    document.body,
   );
 }

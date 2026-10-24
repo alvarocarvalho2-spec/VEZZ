@@ -3907,3 +3907,238 @@ h2:focus {
 }
 .v-odyssey-chapter { pointer-events: none; }
 .v-odyssey-copy { pointer-events: auto; }
+
+.v-odyssey-markers {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+.v-odyssey-marker {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #bcecff;
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  transition: color 180ms ease, filter 180ms ease, scale 180ms ease;
+  filter: drop-shadow(0 2px 7px #00112dbb);
+  touch-action: manipulation;
+}
+.v-odyssey-marker::before {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid #fff1bcaa;
+  border-radius: inherit;
+  background: #09285dbb;
+  box-shadow: 0 0 0 5px #d4f4ff1c, 0 0 20px #76dcff75;
+  content: "";
+  opacity: 0;
+  scale: .72;
+  transition: opacity 180ms ease, scale 180ms ease;
+}
+.v-odyssey-marker svg {
+  position: relative;
+  z-index: 1;
+  transition: scale 180ms ease;
+}
+.v-odyssey-marker > span {
+  position: absolute;
+  bottom: calc(100% - 2px);
+  left: 50%;
+  width: max-content;
+  max-width: min(220px, 70vw);
+  padding: 6px 10px;
+  border: 1px solid #c6e6f4;
+  border-radius: 999px;
+  background: #f7fcff;
+  box-shadow: 0 5px 18px #00143155;
+  color: #061b4f;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  translate: -50% 4px;
+  transition: opacity 180ms ease, translate 180ms ease;
+}
+.v-odyssey-marker:hover,
+.v-odyssey-marker.is-active {
+  z-index: 2;
+  color: #fff2c2;
+  filter: drop-shadow(0 2px 12px #62d8ffcc);
+  scale: 1.08;
+}
+.v-odyssey-marker:hover::before,
+.v-odyssey-marker.is-active::before {
+  opacity: 1;
+  scale: 1;
+}
+.v-odyssey-marker:hover > span,
+.v-odyssey-marker.is-active > span {
+  opacity: 1;
+  translate: -50% 0;
+}
+.v-odyssey-marker:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+dialog.v-clinic-location-dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-width: 720px;
+  max-height: min(84svh, 860px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid #b9cce6;
+  border-radius: 22px;
+  background: #f8fbff;
+  color: #061b4f;
+  box-shadow: 0 30px 100px #020b26aa;
+  overscroll-behavior: contain;
+  animation: v-location-dialog-in 190ms cubic-bezier(.2,.8,.2,1) both;
+}
+dialog.v-clinic-location-dialog::backdrop {
+  background: #020e30b8;
+  backdrop-filter: blur(4px);
+}
+@keyframes v-location-dialog-in {
+  from { opacity: 0; transform: translateY(9px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.v-location-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 19px 22px;
+  background: #061b4f;
+  color: #fff;
+}
+.v-location-dialog-head > div { min-width: 0; }
+.v-location-dialog-head > div > span {
+  display: block;
+  margin-bottom: 4px;
+  color: #a9d9f7;
+  font-size: 12px;
+}
+.v-location-dialog-head h2 {
+  margin: 0;
+  font-size: clamp(21px, 4vw, 28px);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.v-location-dialog-close {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #b9d2ef55;
+  border-radius: 50%;
+  background: transparent;
+  color: #f1f7ff;
+  cursor: pointer;
+}
+.v-location-dialog-close:hover { background: #ffffff18; }
+.v-location-dialog-close:focus-visible,
+.v-location-clinic-link:focus-visible { outline: 3px solid #21a6c9; outline-offset: 3px; }
+.v-location-dialog-content { padding: clamp(16px, 3.2vw, 24px); }
+.v-location-dialog-count {
+  margin: 0 0 13px;
+  color: #61718a;
+  font-size: 14px;
+}
+.v-location-clinics { display: grid; gap: 12px; }
+.v-location-clinic {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 15px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #dce6f2;
+  border-radius: 16px;
+  background: #fff;
+}
+.v-location-clinic > img,
+.v-location-clinic-placeholder {
+  display: grid;
+  width: 96px;
+  height: 96px;
+  place-items: center;
+  border-radius: 12px;
+  background: #e9f2fc;
+  color: #0b3b8f;
+  object-fit: cover;
+}
+.v-location-clinic-info { min-width: 0; }
+.v-location-clinic-info h3 {
+  margin: 0;
+  color: #061b4f;
+  font-size: 18px;
+  line-height: 1.25;
+}
+.v-location-clinic-address { margin: 4px 0 0; color: #5d6e88; font-size: 13px; }
+.v-location-clinic-description {
+  display: -webkit-box;
+  margin: 8px 0 0;
+  overflow: hidden;
+  color: #354a68;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.v-location-specialties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 9px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.v-location-specialties li {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #edf5ff;
+  color: #23466f;
+  font-size: 12px;
+  line-height: 1.25;
+}
+.v-location-clinic-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  margin-top: 8px;
+  color: #0b3b8f;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.v-location-clinic-link:hover { text-decoration: underline; }
+@media (max-width: 520px) {
+  dialog.v-clinic-location-dialog { width: calc(100vw - 24px); max-height: 88svh; border-radius: 18px; }
+  .v-location-dialog-head { padding: 16px; }
+  .v-location-clinic { grid-template-columns: 64px minmax(0, 1fr); gap: 11px; padding: 11px; }
+  .v-location-clinic > img,
+  .v-location-clinic-placeholder { width: 64px; height: 64px; border-radius: 10px; }
+  .v-location-clinic-info h3 { font-size: 16px; }
+  .v-location-clinic-description { -webkit-line-clamp: 4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-odyssey-marker,
+  .v-odyssey-marker::before,
+  .v-odyssey-marker > span { transition: none; }
+  dialog.v-clinic-location-dialog { animation: none; }
+}
