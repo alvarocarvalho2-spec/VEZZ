@@ -256,8 +256,8 @@ function bindQueueActions(root, session, refresh) {
   );
 }
 
-function appointmentsTable(list, compact) {
-  if (!list.length) return emptyState("Nenhuma consulta hoje", "Novos agendamentos aparecem aqui.");
+function appointmentsTable(list, compact, emptyTitle = "Nenhuma consulta hoje", emptyDescription = "Novos agendamentos aparecem aqui.") {
+  if (!list.length) return emptyState(emptyTitle, emptyDescription);
   return `<div class="table-wrap"><table class="data">
     <thead><tr><th>Hora</th><th>Paciente</th><th>Especialidade</th><th>Senha</th><th>Status</th>${compact ? "" : "<th></th>"}</tr></thead>
     <tbody>${list
@@ -295,9 +295,9 @@ export async function renderAppointments(root, { session }) {
         <div class="kicker"></div>
         <h1>Consultas</h1>
         <h3>Hoje</h3>
-        ${appointmentsTable(today)}
+        ${appointmentsTable(today, false)}
         <h3 style="margin-top:28px">Demais</h3>
-        ${appointmentsTable(others)}
+        ${appointmentsTable(others, false, "Nenhuma outra consulta", "Consultas fora de hoje aparecem aqui.")}
       </div>
     </main>
     ${footer()}
@@ -325,7 +325,7 @@ export async function renderPatients(root, { session }) {
                       <td>${escapeHtml(p.nome)}</td>
                       <td>${escapeHtml(p.cpf)}</td>
                       <td>${escapeHtml(p.email)}<br><span class="muted">${escapeHtml(p.telefone || "")}</span></td>
-                      <td>${p.consultas ? p.consultas.length : "—"}</td>
+                      <td>${p.total_consultas}</td>
                     </tr>`
                   )
                   .join("")}</tbody></table></div>`

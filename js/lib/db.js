@@ -436,7 +436,7 @@ export class LocalAdapter {
       .filter((p) => ids.has(p.id_paciente))
       .map((p) => {
         const consultas = this.db.consultas.filter((c) => c.id_paciente === p.id_paciente && (!idClinica || c.id_clinica === idClinica));
-        return { ...p, consultas, senha: undefined, salt: undefined };
+        return { ...p, consultas, total_consultas: consultas.length, senha: undefined, salt: undefined };
       });
   }
 
@@ -1143,9 +1143,13 @@ export class SupabaseAdapter {
     const consultas = await this.restAll("consulta", { select: "id_paciente,id_clinica", order: "id_consulta.asc", ...(idClinica ? { id_clinica: `eq.${idClinica}` } : {}) });
     const ids = [...new Set((consultas || []).map((c) => c.id_paciente))];
     if (!ids.length) return [];
+    const totals = new Map();
+    for (const consulta of consultas) {
+      totals.set(consulta.id_paciente, (totals.get(consulta.id_paciente) || 0) + 1);
+    }
     const pacientes=[];
     for(let offset=0;offset<ids.length;offset+=200) pacientes.push(...await this.restAll("paciente", { id_paciente: `in.(${ids.slice(offset,offset+200).join(",")})`, select: "id_paciente,nome,cpf,email,telefone,foto", order: "id_paciente.asc" }));
-    return pacientes;
+    return pacientes.map((paciente) => ({ ...paciente, total_consultas: totals.get(paciente.id_paciente) }));
   }
 
   async listAppointments({ id_paciente, id_clinica, status, day } = {}) {
