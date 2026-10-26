@@ -9,7 +9,7 @@
     "build:local": "tsc --noEmit && vite build --mode local-demo",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/security.test.mjs tests/database.test.mjs tests/edge.test.mjs tests/queue.test.mjs",
+    "test": "node --test tests/security.test.mjs tests/database.test.mjs tests/edge.test.mjs tests/patient-registration.test.mjs tests/queue.test.mjs",
     "test:logic": "node tests/logica.mjs && node tests/motion-timing.mjs",
     "test:browser": "node scripts/verify-browser.mjs",
     "test:production": "npm run build && node scripts/verify-browser.mjs framework-production",

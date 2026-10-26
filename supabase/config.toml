@@ -3,3 +3,6 @@ project_id = "uexqqbozfmdswajdatua"
 
 [functions.accept-clinic-invite]
 verify_jwt = false
+
+[functions.register-patient]
+verify_jwt = false

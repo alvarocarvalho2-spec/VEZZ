@@ -885,33 +885,34 @@ export class SupabaseAdapter {
   }
 
   async signUpPatient(data) {
-    const auth = await this.auth("signup", { email: data.email, password: data.senha, data: { nome: data.nome, role: "paciente" } });
-    if (!(auth.access_token || auth.session?.access_token)) throw new Error("Confirme o e-mail recebido. O cadastro precisa ser concluído após a confirmação; entre em contato com a clínica se necessário.");
-    this.session = { access_token: auth.access_token || auth.session?.access_token, ...auth };
-    const row = {
-      nome: data.nome,
-      cpf: data.cpf,
-      email: data.email.trim().toLowerCase(),
-      telefone: data.telefone,
-      senha: "supabase-auth",
-    };
-    let created;
-    try { created = await this.rest("paciente", { method: "POST", body: row }); }
-    catch(error) { await this.signOut(); throw error; }
-    const rec = created[0] || created;
+    const response = await fetch(`${this.url}/functions/v1/register-patient`, {
+      method: "POST",
+      headers: { apikey: this.key, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nome: data.nome,
+        cpf: data.cpf,
+        email: data.email,
+        telefone: data.telefone,
+        senha: data.senha,
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Não foi possível concluir o cadastro.");
+    if (!result.session?.access_token || !result.session?.refresh_token || !result.patient?.id_paciente) {
+      throw new Error("Não foi possível confirmar o cadastro. Tente entrar ou contate a clínica.");
+    }
     this.session = {
-      access_token: this.session.access_token,
-      refresh_token: this.session.refresh_token,
+      access_token: result.session.access_token,
+      refresh_token: result.session.refresh_token,
       role: "paciente",
-      id: rec.id_paciente,
-      nome: rec.nome,
-      email: rec.email,
-      foto: "",
+      id: result.patient.id_paciente,
+      nome: result.patient.nome,
+      email: result.patient.email,
+      foto: result.patient.foto || "",
     };
     this.persistSession();
     return this.getSession();
   }
-
   async signUpManager(data) {
     if (data.clinica) throw new Error("O cadastro de clínicas depende da aprovação do administrador VEZZ.");
     let clinicId = data.id_clinica;

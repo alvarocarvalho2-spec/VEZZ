@@ -104,7 +104,7 @@ test('denied or stale PATCH does not report a successful mutation',async()=>{
 test('incomplete signup is not persisted as a fictitious authenticated profile', async () => {
   globalThis.fetch=async()=>response({id:'confirmation-required'});
   const api=new SupabaseAdapter({url:'https://supabase.example.test',anonKey:'public'});
-  await assert.rejects(api.signUpPatient({email:'test@example.test',senha:'password',nome:'Teste QA'}),/Confirme/);assert.equal(api.getSession(),null);
+  await assert.rejects(api.signUpPatient({email:'test@example.test',senha:'password',nome:'Teste QA'}),/confirm/i);assert.equal(api.getSession(),null);
 });
 test('local reschedule cannot overwrite occupied same-time slot on another day', async () => {
   const api=new LocalAdapter();await api.init();
