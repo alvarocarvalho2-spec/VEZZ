@@ -4,7 +4,7 @@
 import { APP, DEFAULT_HOURS, isSupabaseEnabled } from "../config.js";
 import { db } from "../lib/db.js";
 import { applyErrors, validarCNPJ, validarCPF, validarEmail, validarNome, validarSenha, validarTelefone, validarCEP } from "../lib/validators.js";
-import { bindMasks, bindPhotoUpload, bindSubmit, bot, field, photoUpload, toast } from "../lib/ui.js";
+import { bindMasks, bindPhotoUpload, bindSubmit, bot, field, groupForm, photoUpload, toast } from "../lib/ui.js";
 import { escapeHtml } from "../lib/utils.js";
 
 const authIcons = {
@@ -56,7 +56,7 @@ function bindPasswordToggles(root) {
   });
 }
 
-function authLayout(form, botExpr = "calm", variant = "") {
+export function authLayout(form, botExpr = "calm", variant = "") {
   return `
     <main class="auth-shell">
       <section class="auth-form ${variant}" aria-labelledby="auth-title">
@@ -77,9 +77,9 @@ export function renderLogin(root, { session, query }) {
   }
   root.innerHTML = authLayout(
     `<div class="auth-heading">
-       <p class="auth-eyebrow">Bem-vindo de volta</p>
-       <h1 id="auth-title">Entrar</h1>
-       <p>Acompanhe suas consultas e veja a sua vez na fila.</p>
+       <p class="auth-eyebrow">Área do paciente</p>
+       <h1 id="auth-title">Acesse sua conta</h1>
+       <p>Veja suas consultas e acompanhe sua posição na fila.</p>
      </div>
      ${!isSupabaseEnabled() ? `<div class="demo-box">
        <strong>Acesso de demonstração</strong>
@@ -149,8 +149,8 @@ export function renderRegisterPatient(root, { session }) {
   root.innerHTML = authLayout(
     `<div class="auth-heading">
        <p class="auth-eyebrow">Cadastro de paciente</p>
-       <h1 id="auth-title">Criar conta</h1>
-       <p>Preencha seus dados para agendar e acompanhar suas consultas.</p>
+       <h1 id="auth-title">Crie sua conta no VEZZ</h1>
+       <p>Cadastre-se para agendar consultas e acompanhar sua vez na fila.</p>
      </div>
      <form id="reg">
        ${authField({ name: "nome", label: "Nome completo", placeholder: "Ana Clara Silva", value: pendingGoogle?.nome || "", required: true, autocomplete: "name" })}
@@ -168,6 +168,7 @@ export function renderRegisterPatient(root, { session }) {
     "auth-card-register",
   );
   const form = root.querySelector("#reg");
+  groupForm(form, [["Seus dados", ["nome", "cpf", "telefone"]], ["Acesso à conta", ["email", "senha"]]]);
   bindPasswordToggles(form);
   bindMasks(form);
   bindSubmit(form, async (e) => {

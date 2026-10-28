@@ -4177,10 +4177,11 @@ dialog.v-clinic-location-dialog::backdrop {
   max-width: 456px;
   margin: auto;
   padding: clamp(26px, 4vw, 38px);
-  border: 1px solid rgb(198 222 248 / 18%);
+  border: 1px solid rgb(255 255 255 / 72%);
   border-radius: 26px;
-  background: linear-gradient(155deg, rgb(15 48 106 / 98%), rgb(7 28 72 / 98%));
-  box-shadow: 0 24px 80px rgb(0 0 0 / 28%);
+  background: #fff;
+  color: var(--v-navy);
+  box-shadow: 0 28px 88px rgb(2 13 40 / 34%);
   display: flex;
   flex-direction: column;
 }
@@ -4189,6 +4190,10 @@ dialog.v-clinic-location-dialog::backdrop {
   width: min(100%, 540px);
   max-width: 540px;
 }
+.v-app-auth .auth-card-clinic {
+  width: min(100%, 720px);
+  max-width: 720px;
+}
 .v-app-auth .auth-brand {
   display: flex;
   width: max-content;
@@ -4196,7 +4201,7 @@ dialog.v-clinic-location-dialog::backdrop {
   justify-content: center;
   gap: 10px;
   margin: 0 auto 26px;
-  color: #fff;
+  color: var(--v-navy);
   text-decoration: none;
   font: 23px/1 "Mokoto", sans-serif;
   letter-spacing: -1.2px;
@@ -4218,26 +4223,36 @@ dialog.v-clinic-location-dialog::backdrop {
 }
 .v-app-auth .auth-heading {
   margin: 0 0 24px;
+  padding: 0 0 21px;
+  border-bottom: 1px solid #dce6f2;
   text-align: left;
 }
 .v-app-auth .auth-eyebrow {
-  margin: 0 0 8px;
-  color: #9ce8f5;
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #eaf3fc;
+  color: var(--v-royal);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .v-app-auth .auth-heading h1 {
-  margin: 0 0 7px;
-  color: #fff;
+  margin: 0 0 8px;
+  color: var(--v-navy);
   font-size: clamp(34px, 7vw, 42px);
   line-height: 1.12;
   letter-spacing: -0.04em;
 }
 .v-app-auth .auth-heading > p:last-child {
   margin: 0;
-  color: #c1d3ee;
+  color: #536782;
   font-size: 15px;
   line-height: 1.5;
+}
+.v-app-auth .auth-card-clinic .auth-heading h1 {
+  font-size: clamp(30px, 5vw, 40px);
 }
 .v-app-auth .auth-form > form {
   width: 100%;
@@ -4256,13 +4271,13 @@ dialog.v-clinic-location-dialog::backdrop {
 }
 .v-app-auth .auth-field label,
 .v-app-auth .auth-form .field > label {
-  color: #f6f9ff;
+  color: var(--v-navy);
   font-size: 14px;
   font-weight: 600;
 }
 .v-app-auth .auth-inline-link,
 .v-app-auth .auth-verified {
-  color: #9ce8f5;
+  color: var(--v-royal);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
@@ -4270,7 +4285,7 @@ dialog.v-clinic-location-dialog::backdrop {
 .v-app-auth .auth-inline-link:hover,
 .v-app-auth .auth-switch a:hover,
 .v-app-auth .auth-support a:hover {
-  color: #c5f4fb;
+  color: #062b70;
   text-decoration: underline;
 }
 .v-app-auth .auth-input-control {
@@ -4280,14 +4295,14 @@ dialog.v-clinic-location-dialog::backdrop {
   align-items: center;
   gap: 10px;
   padding: 0 15px;
-  border: 1px solid #536b91;
+  border: 1px solid #bdcde1;
   border-radius: 999px;
-  background: rgb(4 17 46 / 72%);
-  color: #becde4;
+  background: #f3f7fc;
+  color: #57708f;
 }
 .v-app-auth .auth-input-control:focus-within {
-  border-color: var(--v-sky);
-  box-shadow: 0 0 0 3px rgb(117 213 237 / 19%);
+  border-color: var(--v-royal);
+  box-shadow: 0 0 0 3px rgb(11 59 143 / 14%);
 }
 .v-app-auth .auth-input-control input {
   width: 100%;
@@ -4298,12 +4313,12 @@ dialog.v-clinic-location-dialog::backdrop {
   border-radius: inherit;
   outline: 0;
   background: transparent;
-  color: #fff;
+  color: var(--v-navy);
   box-shadow: none;
   font-size: 15px;
 }
 .v-app-auth .auth-input-control input::placeholder {
-  color: #8fa4c6;
+  color: #687d9d;
   opacity: 1;
 }
 .v-app-auth .auth-input-control input:focus {
@@ -4312,14 +4327,14 @@ dialog.v-clinic-location-dialog::backdrop {
   box-shadow: none;
 }
 .v-app-auth .auth-input-control input[readonly] {
-  color: #cbd8ed;
+  color: #536782;
   cursor: default;
 }
 .v-app-auth .auth-field-icon {
   display: grid;
   flex: 0 0 18px;
   place-items: center;
-  color: #a9bddc;
+  color: #607b9f;
 }
 .v-app-auth .auth-field-icon svg {
   width: 18px;
@@ -4340,11 +4355,11 @@ dialog.v-clinic-location-dialog::backdrop {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #becde4;
+  color: var(--v-royal);
 }
 .v-app-auth .auth-password-toggle:hover {
-  background: rgb(255 255 255 / 8%);
-  color: #fff;
+  background: #e4eef9;
+  color: #062b70;
 }
 .v-app-auth .auth-password-toggle:focus-visible,
 .v-app-auth .auth-inline-link:focus-visible,
@@ -4352,7 +4367,7 @@ dialog.v-clinic-location-dialog::backdrop {
 .v-app-auth .auth-support a:focus-visible,
 .v-app-auth .auth-google:focus-visible,
 .v-app-auth .auth-submit:focus-visible {
-  outline: 2px solid var(--v-sky);
+  outline: 2px solid var(--v-royal);
   outline-offset: 4px;
 }
 .v-app-auth .auth-password-toggle svg {
@@ -4365,29 +4380,29 @@ dialog.v-clinic-location-dialog::backdrop {
   stroke-width: 1.6;
 }
 .v-app-auth .auth-form .hint {
-  color: #a8bcda;
+  color: #60748f;
   font-size: 12px;
 }
 .v-app-auth .auth-form .field-error {
-  color: #ffb9b9;
+  color: #a3222d;
   font-size: 13px;
 }
 .v-app-auth .auth-form .field > input,
 .v-app-auth .auth-form select,
 .v-app-auth .auth-form textarea {
-  border-color: #536b91;
-  background: rgb(4 17 46 / 72%);
-  color: #fff;
+  border-color: #bdcde1;
+  background: #f3f7fc;
+  color: var(--v-navy);
 }
 .v-app-auth .auth-form .field > input::placeholder,
 .v-app-auth .auth-form textarea::placeholder {
-  color: #8fa4c6;
+  color: #687d9d;
 }
 .v-app-auth .auth-form .field > input:focus,
 .v-app-auth .auth-form select:focus,
 .v-app-auth .auth-form textarea:focus {
-  border-color: var(--v-sky);
-  outline: 2px solid rgb(117 213 237 / 30%);
+  border-color: var(--v-royal);
+  outline: 2px solid rgb(11 59 143 / 14%);
 }
 .v-app-auth .auth-submit {
   width: 100%;
@@ -4395,39 +4410,39 @@ dialog.v-clinic-location-dialog::backdrop {
   margin-top: 3px;
   border: 0;
   border-radius: 999px;
-  background: var(--v-sky);
-  color: var(--v-navy);
-  box-shadow: 0 9px 28px rgb(117 213 237 / 13%);
+  background: var(--v-royal);
+  color: #fff;
+  box-shadow: 0 9px 28px rgb(11 59 143 / 18%);
   font-size: 16px;
   font-weight: 700;
 }
 .v-app-auth .auth-submit:hover:not(:disabled) {
-  background: #a3e9f5;
-  color: #061b4f;
+  background: #12479e;
+  color: #fff;
 }
 .v-app-auth .v-legacy .btn.auth-submit:not(.btn-ghost):not(.btn-danger):not(.btn-ok):not(.btn-gold) {
-  border-color: var(--v-sky);
-  background: var(--v-sky);
-  color: var(--v-navy);
+  border-color: var(--v-royal);
+  background: var(--v-royal);
+  color: #fff;
 }
 .v-app-auth .v-legacy .btn.auth-submit:not(.btn-ghost):not(.btn-danger):not(.btn-ok):not(.btn-gold):hover:not(:disabled) {
-  border-color: #a3e9f5;
-  background: #a3e9f5;
-  color: var(--v-navy);
+  border-color: #12479e;
+  background: #12479e;
+  color: #fff;
 }
 .v-app-auth .auth-divider {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 20px 0;
-  color: #b9c8e0;
+  color: #667b98;
   font-size: 13px;
 }
 .v-app-auth .auth-divider::before,
 .v-app-auth .auth-divider::after {
   height: 1px;
   flex: 1;
-  background: rgb(190 208 233 / 22%);
+  background: #d9e3ef;
   content: "";
 }
 .v-app-auth .auth-google {
@@ -4437,16 +4452,16 @@ dialog.v-clinic-location-dialog::backdrop {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border: 1px solid #536b91;
+  border: 1px solid #c7d5e7;
   border-radius: 999px;
-  background: rgb(4 17 46 / 45%);
-  color: #fff;
+  background: #edf4fc;
+  color: var(--v-navy);
   font-size: 15px;
   font-weight: 600;
 }
 .v-app-auth .auth-google:hover:not(:disabled) {
-  border-color: #90a8cb;
-  background: rgb(255 255 255 / 6%);
+  border-color: #91aac9;
+  background: #e4eef9;
 }
 .v-app-auth .auth-google:disabled {
   cursor: not-allowed;
@@ -4461,20 +4476,20 @@ dialog.v-clinic-location-dialog::backdrop {
 .v-app-auth .auth-support,
 .v-app-auth .auth-hint {
   margin: 22px 0 0;
-  color: #c1d3ee;
+  color: #536782;
   font-size: 14px;
   line-height: 1.5;
   text-align: center;
 }
 .v-app-auth .auth-switch a,
 .v-app-auth .auth-support a {
-  color: #9ce8f5;
+  color: var(--v-royal);
   font-weight: 600;
   text-decoration: none;
 }
 .v-app-auth .auth-hint {
   margin-top: 9px;
-  color: #96abcc;
+  color: #637894;
   font-size: 12px;
 }
 .v-app-auth .auth-support {
@@ -4484,10 +4499,10 @@ dialog.v-clinic-location-dialog::backdrop {
 .v-app-auth .auth-message {
   margin: 0 0 14px;
   padding: 11px 13px;
-  border: 1px solid rgb(255 185 185 / 34%);
+  border: 1px solid #e6b3b6;
   border-radius: 12px;
-  background: rgb(139 40 49 / 25%);
-  color: #ffd1d1;
+  background: #fff2f2;
+  color: #92232b;
   font-size: 13px;
   line-height: 1.45;
 }
@@ -4496,35 +4511,49 @@ dialog.v-clinic-location-dialog::backdrop {
   gap: 4px;
   margin: 0 0 20px;
   padding: 12px 14px;
-  border-color: rgb(117 213 237 / 30%);
+  border: 1px solid #cfdfef;
   border-radius: 14px;
-  background: rgb(117 213 237 / 9%);
-  color: #d9e7f9;
+  background: #eef6fc;
+  color: #405978;
   font-size: 12px;
   line-height: 1.5;
 }
 .v-app-auth .demo-box strong {
-  color: #fff;
+  color: var(--v-navy);
   font-size: 13px;
 }
 .v-app-auth .demo-box code {
   display: inline;
   padding: 1px 6px;
   border-radius: 6px;
-  background: rgb(4 17 46 / 72%);
-  color: #fff;
+  background: #dceaf8;
+  color: var(--v-navy);
   overflow-wrap: anywhere;
 }
 .v-app-auth .auth-form .form-section {
-  margin-bottom: 18px;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 18px;
+  padding: 16px 16px 2px;
+  border: 1px solid #d7e3f0;
+  border-radius: 16px;
+  background: #f3f7fc;
 }
 .v-app-auth .auth-form .form-section legend {
-  padding: 0 0 10px;
-  color: #c8d8ee;
+  padding: 0 8px;
+  color: var(--v-royal);
   font-size: 14px;
+  font-weight: 700;
+}
+.v-app-auth .auth-card-clinic .field-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr);
+}
+.v-app-auth .auth-card-clinic .clinic-address-locality {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.v-app-auth .auth-card-clinic textarea {
+  min-height: 116px;
+  resize: vertical;
 }
 @media (max-width: 767px) {
   .v-app-auth .auth-shell {
@@ -4545,5 +4574,11 @@ dialog.v-clinic-location-dialog::backdrop {
   }
   .v-app-auth .auth-form {
     padding-inline: 18px;
+  }
+}
+@media (max-width: 639px) {
+  .v-app-auth .auth-card-clinic .field-row,
+  .v-app-auth .auth-card-clinic .clinic-address-locality {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

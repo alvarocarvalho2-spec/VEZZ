@@ -27,6 +27,7 @@ import {
 } from "../lib/utils.js";
 import { initJornada, initParallax, startQueueDemo } from "../lib/motion.js";
 import { applyErrors, validarCNPJ, validarEmail, validarNome, validarTelefone, validarCEP } from "../lib/validators.js";
+import { authLayout } from "./auth.js";
 
 // Atualização ao vivo da tela de agendamento: enquanto a tela está aberta, a
 // grade de horários consulta o banco de novo (outros pacientes podem marcar).
@@ -276,7 +277,30 @@ export function renderClinicRequest(root, { session }) {
     location.hash = "#/admin-vezz";
     return;
   }
-  root.innerHTML = `${header(session)}<main class="page"><div class="wrap-xs card card-pad"><div class="kicker">Para clínicas</div><h1>Quer cadastrar sua clínica?</h1><p>Envie suas informações. A equipe VEZZ analisa a solicitação e entra em contato para orientar os próximos passos.</p><form id="clinic-request">${field({ name: "nome_clinica", label: "Nome da clínica", required: true })}${field({ name: "cnpj", label: "CNPJ", required: true })}${field({ name: "responsavel", label: "Nome do responsável", required: true })}${field({ name: "email_responsavel", label: "E-mail do responsável", type: "email", required: true })}${field({ name: "telefone_responsavel", label: "Telefone do responsável", required: true })}${field({ name: "telefone_clinica", label: "Telefone da clínica", required: true })}${field({ name: "especialidades", label: "Especialidades", placeholder: "Cardiologia, Clínica Geral", required: true })}<div class="field-row">${field({ name: "rua", label: "Rua", required: true })}${field({ name: "numero", label: "Número", required: true })}</div><div class="field-row">${field({ name: "bairro", label: "Bairro", required: true })}${field({ name: "cidade", label: "Cidade", required: true })}</div>${field({ name: "cep", label: "CEP", required: true })}${field({ name: "descricao", label: "Sobre a clínica", type: "textarea" })}<button class="btn btn-block">Enviar solicitação</button></form></div></main>${footer()}`;
+  root.innerHTML = authLayout(
+    `<div class="auth-heading">
+       <p class="auth-eyebrow">Para clínicas</p>
+       <h1 id="auth-title">Solicite o cadastro da clínica</h1>
+       <p>Envie os dados da clínica e de uma pessoa responsável. A equipe VEZZ avalia a solicitação e retorna com os próximos passos.</p>
+     </div>
+     <form id="clinic-request">
+       ${field({ name: "nome_clinica", label: "Nome da clínica", required: true })}
+       ${field({ name: "cnpj", label: "CNPJ", required: true })}
+       ${field({ name: "responsavel", label: "Nome do responsável", required: true })}
+       ${field({ name: "email_responsavel", label: "E-mail do responsável", type: "email", required: true })}
+       ${field({ name: "telefone_responsavel", label: "Telefone do responsável", required: true })}
+       ${field({ name: "telefone_clinica", label: "Telefone da clínica", required: true })}
+       ${field({ name: "especialidades", label: "Especialidades", placeholder: "Cardiologia, Clínica Geral", required: true })}
+       <div class="field-row clinic-address-numbers">${field({ name: "rua", label: "Rua", required: true })}${field({ name: "numero", label: "Número", required: true })}</div>
+       <div class="field-row clinic-address-locality">${field({ name: "bairro", label: "Bairro", required: true })}${field({ name: "cidade", label: "Cidade", required: true })}</div>
+       ${field({ name: "cep", label: "CEP", required: true })}
+       ${field({ name: "descricao", label: "Sobre a clínica", type: "textarea" })}
+       <button class="btn btn-block auth-submit" type="submit">Enviar solicitação</button>
+     </form>
+     <p class="auth-switch">Já tem acesso ao VEZZ? <a href="#/login">Entrar</a></p>`,
+    "calm",
+    "auth-card-clinic",
+  );
   groupForm(root.querySelector("#clinic-request"), [["A clínica", ["nome_clinica", "cnpj", "telefone_clinica", "especialidades", "descricao"]], ["Responsável pelo cadastro", ["responsavel", "email_responsavel", "telefone_responsavel"]], ["Endereço", ["rua", "numero", "bairro", "cidade", "cep"]]]);
   const form=root.querySelector("#clinic-request");
   bindMasks(form);

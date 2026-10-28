@@ -42,9 +42,12 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
-  const isAuthRoute = ["/login", "/cadastro", "/recuperar-senha"].includes(
-    location.pathname,
-  );
+  const isAuthRoute = [
+    "/login",
+    "/cadastro",
+    "/recuperar-senha",
+    "/solicitar-clinica",
+  ].includes(location.pathname);
   useEffect(() => {
     const initialHash = window.location.hash;
     initialization ??= initDb();
