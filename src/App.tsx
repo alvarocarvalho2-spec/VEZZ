@@ -42,6 +42,9 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
+  const isAuthRoute = ["/login", "/cadastro", "/recuperar-senha"].includes(
+    location.pathname,
+  );
   useEffect(() => {
     const initialHash = window.location.hash;
     initialization ??= initDb();
@@ -95,8 +98,10 @@ export default function App() {
     />
   );
   return (
-    <div className={`v-app ${session ? "has-session" : ""}`}>
-      <Header session={session} />
+    <div
+      className={`v-app ${session ? "has-session" : ""} ${isAuthRoute ? "v-app-auth" : ""}`}
+    >
+      {!isAuthRoute && <Header session={session} />}
       {error ? (
         <main className="v-container v-error">
           <Bot expression="worried" />
@@ -189,8 +194,8 @@ export default function App() {
           </Suspense>
         </motion.div>
       )}
-      <Footer />
-      <BottomNav session={session} />
+      {!isAuthRoute && <Footer />}
+      {!isAuthRoute && <BottomNav session={session} />}
     </div>
   );
 }

@@ -9,14 +9,14 @@ const valid = {
   telefone: '(85) 98888-7777',
   senha: 'Senha123',
 };
-const request = (body = valid, method = 'POST') => new Request('https://edge.example.test/', {
+const request = (body = valid, method = 'POST', headers = {}) => new Request('https://edge.example.test/', {
   method,
-  headers: { 'content-type': 'application/json' },
+  headers: { 'content-type': 'application/json', ...headers },
   body: method === 'POST' ? JSON.stringify(body) : undefined,
 });
 
 function fixture(options = {}) {
-  const state = { authCalls: 0, signInCalls: 0, authUser: null, deleted: [], patient: null, clientsCreated: 0 };
+  const state = { authCalls: 0, signInCalls: 0, googleCalls: 0, authUser: null, deleted: [], patient: null, clientsCreated: 0 };
   const admin = {
     auth: { admin: { deleteUser: async (id) => {
       state.deleted.push(id);
@@ -47,7 +47,18 @@ function fixture(options = {}) {
       };
     },
   };
-  const publicClient = { auth: { signInWithPassword: async () => {
+  const publicClient = { auth: { getUser: async (token) => {
+    state.googleCalls += 1;
+    if (token !== 'google-access' || !options.googleUser) return { data: { user: null }, error: { message: 'invalid token' } };
+    const googleUser = options.googleUser === true ? {
+      id: 'google-auth',
+      email: valid.email,
+      email_confirmed_at: '2026-10-28T12:00:00.000Z',
+      app_metadata: { provider: 'google', providers: ['google'] },
+      identities: [{ provider: 'google' }],
+    } : options.googleUser;
+    return { data: { user: googleUser }, error: null };
+  }, signInWithPassword: async () => {
     state.signInCalls += 1;
     if (!options.recoverOrphan) return { data: { user: null, session: null }, error: { message: "invalid credentials" } };
     state.authUser = { id: "orphan-auth" };
@@ -96,6 +107,35 @@ test('successful signup returns Auth tokens and the created patient profile', as
   assert.equal(result.patient.id_paciente, 'patient-1');
   assert.equal(state.patient.auth_id, 'auth-1');
   assert.deepEqual(state.deleted, []);
+});
+
+test('Google signup verifies the identity and completes the patient profile without a password', async () => {
+  const { handler, state } = fixture({ googleUser: true });
+  const googleBody = { nome: valid.nome, cpf: valid.cpf, email: valid.email, telefone: valid.telefone, google: true };
+  const response = await handler(request(googleBody, 'POST', { authorization: 'Bearer google-access' }));
+  const result = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(state.googleCalls, 1);
+  assert.equal(state.authCalls, 0);
+  assert.equal(state.patient.auth_id, 'google-auth');
+  assert.equal(state.patient.senha, 'supabase-auth');
+  assert.equal(result.patient.id_paciente, 'patient-1');
+  assert.equal('session' in result, false);
+});
+
+test('Google patient completion rejects missing tokens and unverified or mismatched identities', async () => {
+  const body = { nome: valid.nome, cpf: valid.cpf, email: valid.email, telefone: valid.telefone, google: true };
+  const missing = fixture({ googleUser: true });
+  assert.equal((await missing.handler(request(body))).status, 401);
+  assert.equal(missing.state.authCalls, 0);
+
+  const mismatch = fixture({ googleUser: { id: 'google-auth', email: 'another@example.test', email_confirmed_at: 'now', app_metadata: { provider: 'google' } } });
+  assert.equal((await mismatch.handler(request(body, 'POST', { authorization: 'Bearer google-access' }))).status, 401);
+  assert.equal(mismatch.state.patient, null);
+
+  const unverified = fixture({ googleUser: { id: 'google-auth', email: valid.email, app_metadata: { provider: 'google' } } });
+  assert.equal((await unverified.handler(request(body, 'POST', { authorization: 'Bearer google-access' }))).status, 401);
+  assert.equal(unverified.state.patient, null);
 });
 
 test('confirmed profile insert failure removes the new Auth user and hides database details', async () => {

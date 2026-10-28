@@ -234,6 +234,14 @@ export class LocalAdapter {
     this.setSession(null);
   }
 
+  getPendingGoogleProfile() {
+    return null;
+  }
+
+  async signInWithGoogle() {
+    throw new Error("O acesso com Google fica disponível quando o Supabase está conectado.");
+  }
+
   async adminSignIn() {
     // Modo demonstração (localStorage): sem autenticação real, o painel
     // administrativo fica desativado — nunca credenciais fixas no frontend.
@@ -695,6 +703,130 @@ export class SupabaseAdapter {
     this.key = cfg.anonKey;
     this.session = null;
     this.ready = false;
+    this.oauthClientPromise = null;
+  }
+
+  async googleOAuthClient() {
+    if (!this.oauthClientPromise) {
+      this.oauthClientPromise = import("@supabase/supabase-js").then(({ createClient }) => {
+        const storageKey = "vezz.google.pkce.v1";
+        const storage = {
+          async getItem(key) {
+            return key === storageKey ? null : sessionStorage.getItem(key);
+          },
+          async setItem(key, value) {
+            if (key !== storageKey) sessionStorage.setItem(key, value);
+          },
+          async removeItem(key) {
+            if (key !== storageKey) sessionStorage.removeItem(key);
+          },
+        };
+        return createClient(this.url, this.key, {
+          auth: {
+            autoRefreshToken: false,
+            detectSessionInUrl: true,
+            flowType: "pkce",
+            persistSession: true,
+            storage,
+            storageKey,
+          },
+        });
+      });
+    }
+    return this.oauthClientPromise;
+  }
+
+  async signInWithGoogle(redirect = "#/paciente") {
+    if (!this.url || !this.key) {
+      throw new Error("O acesso com Google fica disponível quando o Supabase está conectado.");
+    }
+    const destination = String(redirect || "").trim();
+    const safeDestination = destination.startsWith("#/") && !destination.startsWith("#//") && !destination.includes("\\")
+      ? destination
+      : "#/paciente";
+    sessionStorage.setItem(APP.oauthRedirectKey, safeDestination);
+    const authClient = await this.googleOAuthClient();
+    const { error } = await authClient.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${location.origin}${location.pathname}`,
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (error) {
+      sessionStorage.removeItem(APP.oauthRedirectKey);
+      if (/unsupported provider|provider.*not enabled/i.test(error.message || "")) {
+        throw new Error("O acesso com Google ainda não está configurado neste projeto.");
+      }
+      throw new Error("Não foi possível iniciar o acesso com Google. Tente novamente.");
+    }
+  }
+
+  setOAuthRoute(route) {
+    history.replaceState(history.state, "", `${location.pathname}${route}`);
+  }
+
+  async handleGoogleOAuthCallback() {
+    const callbackParams = new URLSearchParams(location.search || "");
+    const providerError = callbackParams.get("error_code") || callbackParams.get("error");
+    if (providerError) {
+      sessionStorage.removeItem(APP.oauthRedirectKey);
+      this.setOAuthRoute("#/login?oauth_error=google");
+      return true;
+    }
+    if (!callbackParams.has("code")) return false;
+
+    const redirect = String(sessionStorage.getItem(APP.oauthRedirectKey) || "#/paciente");
+    const safeRedirect = redirect.startsWith("#/") && !redirect.startsWith("#//") && !redirect.includes("\\")
+      ? redirect
+      : "#/paciente";
+    sessionStorage.removeItem(APP.oauthRedirectKey);
+
+    try {
+      const authClient = await this.googleOAuthClient();
+      const { data, error } = await authClient.auth.getSession();
+      const oauthSession = data?.session;
+      if (error || !oauthSession?.access_token || !oauthSession?.refresh_token) {
+        throw error || new Error("Não foi possível validar o retorno do Google.");
+      }
+
+      this.session = {
+        access_token: oauthSession.access_token,
+        refresh_token: oauthSession.refresh_token,
+      };
+      let profile;
+      try {
+        profile = await this.currentProfile();
+      } catch (profileError) {
+        if (profileError.code !== "VEZZ_PROFILE_MISSING") throw profileError;
+        const user = oauthSession.user || {};
+        const hasGoogleIdentity = user.app_metadata?.provider === "google"
+          || user.app_metadata?.providers?.includes("google")
+          || user.identities?.some((identity) => identity.provider === "google");
+        if (!user.email || !hasGoogleIdentity) throw profileError;
+        this.session = {
+          ...this.session,
+          oauth_onboarding: true,
+          email: user.email.trim().toLowerCase(),
+          nome: user.user_metadata?.full_name || user.user_metadata?.name || user.email.split("@")[0],
+          foto: user.user_metadata?.avatar_url || "",
+          oauth_redirect: safeRedirect,
+        };
+        this.persistSession();
+        this.setOAuthRoute("#/cadastro?oauth=google");
+        return true;
+      }
+
+      this.session = { ...this.session, ...profile };
+      this.persistSession();
+      this.setOAuthRoute(safeRedirect);
+      return true;
+    } catch {
+      this.session = null;
+      localStorage.removeItem(APP.sessionKey);
+      this.setOAuthRoute("#/login?oauth_error=google");
+      return true;
+    }
   }
 
   headers(extra = {}) {
@@ -801,6 +933,10 @@ export class SupabaseAdapter {
   }
 
   async init() {
+    if (await this.handleGoogleOAuthCallback()) {
+      this.ready = true;
+      return this.getSession();
+    }
     const callback = new URLSearchParams(location.hash.slice(1));
     if (callback.get("type") === "recovery" && callback.get("access_token")) {
       this.session = { access_token: callback.get("access_token"), refresh_token: callback.get("refresh_token"), recovery: true };
@@ -815,6 +951,11 @@ export class SupabaseAdapter {
       const saved = JSON.parse(localStorage.getItem(APP.sessionKey) || "null");
       if (saved?.access_token && saved.recovery) {
         this.session = saved;
+        return null;
+      }
+      if (saved?.access_token && saved.oauth_onboarding) {
+        this.session = saved;
+        this.ready = true;
         return null;
       }
       if (saved?.access_token) {
@@ -839,7 +980,7 @@ export class SupabaseAdapter {
   }
 
   getSession() {
-    if (!this.session || this.session.recovery) return null;
+    if (!this.session || this.session.recovery || this.session.oauth_onboarding) return null;
     return {
       role: this.session.role,
       id: this.session.id,
@@ -850,6 +991,15 @@ export class SupabaseAdapter {
       cargo: this.session.cargo,
       principal: !!this.session.principal,
       access_token: this.session.access_token,
+    };
+  }
+
+  getPendingGoogleProfile() {
+    if (!this.session?.oauth_onboarding) return null;
+    return {
+      email: this.session.email,
+      nome: this.session.nome,
+      redirect: this.session.oauth_redirect || "#/paciente",
     };
   }
 
@@ -881,11 +1031,17 @@ export class SupabaseAdapter {
         principal: !!ges[0].principal,
       };
     }
-    throw new Error("Seu cadastro está incompleto. Entre em contato com a clínica para regularizar o acesso.");
+    const error = new Error("Seu cadastro está incompleto. Entre em contato com a clínica para regularizar o acesso.");
+    error.code = "VEZZ_PROFILE_MISSING";
+    throw error;
   }
 
   async signUpPatient(data) {
-    const response = await fetch(`${this.url}/functions/v1/register-patient`, {
+    const googleOnboarding = data.google === true && this.session?.oauth_onboarding === true;
+    if (data.google && !googleOnboarding) {
+      throw new Error("Sua sessão do Google expirou. Entre novamente para concluir o cadastro.");
+    }
+    const requestOptions = {
       method: "POST",
       headers: { apikey: this.key, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -893,11 +1049,34 @@ export class SupabaseAdapter {
         cpf: data.cpf,
         email: data.email,
         telefone: data.telefone,
-        senha: data.senha,
+        ...(googleOnboarding ? { google: true } : { senha: data.senha }),
       }),
-    });
+    };
+    if (googleOnboarding) requestOptions.headers.Authorization = `Bearer ${this.session.access_token}`;
+    let response = await fetch(`${this.url}/functions/v1/register-patient`, requestOptions);
+    if (response.status === 401 && googleOnboarding && this.session?.refresh_token && await this.refreshSession()) {
+      requestOptions.headers.Authorization = `Bearer ${this.session.access_token}`;
+      response = await fetch(`${this.url}/functions/v1/register-patient`, requestOptions);
+    }
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Não foi possível concluir o cadastro.");
+    if (googleOnboarding) {
+      if (!result.patient?.id_paciente) {
+        throw new Error("Não foi possível confirmar o cadastro. Revise seus dados e tente novamente.");
+      }
+      this.session = {
+        ...this.session,
+        oauth_onboarding: false,
+        role: "paciente",
+        id: result.patient.id_paciente,
+        nome: result.patient.nome,
+        email: result.patient.email,
+        foto: result.patient.foto || this.session.foto || "",
+      };
+      delete this.session.oauth_redirect;
+      this.persistSession();
+      return this.getSession();
+    }
     if (!result.session?.access_token || !result.session?.refresh_token || !result.patient?.id_paciente) {
       throw new Error("Não foi possível confirmar o cadastro. Tente entrar ou contate a clínica.");
     }

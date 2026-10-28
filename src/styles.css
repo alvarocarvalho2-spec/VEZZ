@@ -2227,6 +2227,7 @@ h2:focus {
     width: calc(100% - 40px);
   }
 }
+
 @media (max-width: 767px) {
   .v-header {
     width: calc(100% - 24px);
@@ -4147,4 +4148,402 @@ dialog.v-clinic-location-dialog::backdrop {
   .v-odyssey-marker::before,
   .v-odyssey-marker > span { transition: none; }
   dialog.v-clinic-location-dialog { animation: none; }
+}
+
+/* Authentication stays focused and uses VEZZ's navy, royal and sky palette. */
+.v-app-auth {
+  min-height: 100dvh;
+  background: var(--v-navy);
+}
+.v-app-auth .v-route {
+  min-height: 100dvh;
+}
+.v-app-auth .v-legacy {
+  width: 100%;
+}
+.v-app-auth .auth-shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  padding: clamp(24px, 5vw, 52px) 16px;
+  background:
+    radial-gradient(circle at 18% 0%, rgb(11 59 143 / 52%), transparent 37%),
+    radial-gradient(circle at 96% 96%, rgb(117 213 237 / 14%), transparent 32%),
+    var(--v-navy);
+}
+.v-app-auth .auth-form {
+  width: min(100%, 456px);
+  max-width: 456px;
+  margin: auto;
+  padding: clamp(26px, 4vw, 38px);
+  border: 1px solid rgb(198 222 248 / 18%);
+  border-radius: 26px;
+  background: linear-gradient(155deg, rgb(15 48 106 / 98%), rgb(7 28 72 / 98%));
+  box-shadow: 0 24px 80px rgb(0 0 0 / 28%);
+  display: flex;
+  flex-direction: column;
+}
+.v-app-auth .auth-card-register,
+.v-app-auth .auth-card-manager {
+  width: min(100%, 540px);
+  max-width: 540px;
+}
+.v-app-auth .auth-brand {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 auto 26px;
+  color: #fff;
+  text-decoration: none;
+  font: 23px/1 "Mokoto", sans-serif;
+  letter-spacing: -1.2px;
+}
+.v-app-auth .auth-brand:focus-visible {
+  border-radius: 8px;
+  outline: 2px solid var(--v-sky);
+  outline-offset: 6px;
+}
+.v-app-auth .auth-brand-bot {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  overflow: hidden;
+}
+.v-app-auth .auth-brand-bot .bot {
+  --bot-size: 40px;
+}
+.v-app-auth .auth-heading {
+  margin: 0 0 24px;
+  text-align: left;
+}
+.v-app-auth .auth-eyebrow {
+  margin: 0 0 8px;
+  color: #9ce8f5;
+  font-size: 13px;
+  font-weight: 600;
+}
+.v-app-auth .auth-heading h1 {
+  margin: 0 0 7px;
+  color: #fff;
+  font-size: clamp(34px, 7vw, 42px);
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+}
+.v-app-auth .auth-heading > p:last-child {
+  margin: 0;
+  color: #c1d3ee;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.v-app-auth .auth-form > form {
+  width: 100%;
+  max-width: none;
+}
+.v-app-auth .auth-form .field {
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.v-app-auth .auth-field-heading {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.v-app-auth .auth-field label,
+.v-app-auth .auth-form .field > label {
+  color: #f6f9ff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.v-app-auth .auth-inline-link,
+.v-app-auth .auth-verified {
+  color: #9ce8f5;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.v-app-auth .auth-inline-link:hover,
+.v-app-auth .auth-switch a:hover,
+.v-app-auth .auth-support a:hover {
+  color: #c5f4fb;
+  text-decoration: underline;
+}
+.v-app-auth .auth-input-control {
+  position: relative;
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 15px;
+  border: 1px solid #536b91;
+  border-radius: 999px;
+  background: rgb(4 17 46 / 72%);
+  color: #becde4;
+}
+.v-app-auth .auth-input-control:focus-within {
+  border-color: var(--v-sky);
+  box-shadow: 0 0 0 3px rgb(117 213 237 / 19%);
+}
+.v-app-auth .auth-input-control input {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+  font-size: 15px;
+}
+.v-app-auth .auth-input-control input::placeholder {
+  color: #8fa4c6;
+  opacity: 1;
+}
+.v-app-auth .auth-input-control input:focus {
+  outline: 0;
+  border: 0;
+  box-shadow: none;
+}
+.v-app-auth .auth-input-control input[readonly] {
+  color: #cbd8ed;
+  cursor: default;
+}
+.v-app-auth .auth-field-icon {
+  display: grid;
+  flex: 0 0 18px;
+  place-items: center;
+  color: #a9bddc;
+}
+.v-app-auth .auth-field-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+.v-app-auth .auth-password-toggle {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #becde4;
+}
+.v-app-auth .auth-password-toggle:hover {
+  background: rgb(255 255 255 / 8%);
+  color: #fff;
+}
+.v-app-auth .auth-password-toggle:focus-visible,
+.v-app-auth .auth-inline-link:focus-visible,
+.v-app-auth .auth-switch a:focus-visible,
+.v-app-auth .auth-support a:focus-visible,
+.v-app-auth .auth-google:focus-visible,
+.v-app-auth .auth-submit:focus-visible {
+  outline: 2px solid var(--v-sky);
+  outline-offset: 4px;
+}
+.v-app-auth .auth-password-toggle svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+.v-app-auth .auth-form .hint {
+  color: #a8bcda;
+  font-size: 12px;
+}
+.v-app-auth .auth-form .field-error {
+  color: #ffb9b9;
+  font-size: 13px;
+}
+.v-app-auth .auth-form .field > input,
+.v-app-auth .auth-form select,
+.v-app-auth .auth-form textarea {
+  border-color: #536b91;
+  background: rgb(4 17 46 / 72%);
+  color: #fff;
+}
+.v-app-auth .auth-form .field > input::placeholder,
+.v-app-auth .auth-form textarea::placeholder {
+  color: #8fa4c6;
+}
+.v-app-auth .auth-form .field > input:focus,
+.v-app-auth .auth-form select:focus,
+.v-app-auth .auth-form textarea:focus {
+  border-color: var(--v-sky);
+  outline: 2px solid rgb(117 213 237 / 30%);
+}
+.v-app-auth .auth-submit {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--v-sky);
+  color: var(--v-navy);
+  box-shadow: 0 9px 28px rgb(117 213 237 / 13%);
+  font-size: 16px;
+  font-weight: 700;
+}
+.v-app-auth .auth-submit:hover:not(:disabled) {
+  background: #a3e9f5;
+  color: #061b4f;
+}
+.v-app-auth .v-legacy .btn.auth-submit:not(.btn-ghost):not(.btn-danger):not(.btn-ok):not(.btn-gold) {
+  border-color: var(--v-sky);
+  background: var(--v-sky);
+  color: var(--v-navy);
+}
+.v-app-auth .v-legacy .btn.auth-submit:not(.btn-ghost):not(.btn-danger):not(.btn-ok):not(.btn-gold):hover:not(:disabled) {
+  border-color: #a3e9f5;
+  background: #a3e9f5;
+  color: var(--v-navy);
+}
+.v-app-auth .auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: #b9c8e0;
+  font-size: 13px;
+}
+.v-app-auth .auth-divider::before,
+.v-app-auth .auth-divider::after {
+  height: 1px;
+  flex: 1;
+  background: rgb(190 208 233 / 22%);
+  content: "";
+}
+.v-app-auth .auth-google {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #536b91;
+  border-radius: 999px;
+  background: rgb(4 17 46 / 45%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+.v-app-auth .auth-google:hover:not(:disabled) {
+  border-color: #90a8cb;
+  background: rgb(255 255 255 / 6%);
+}
+.v-app-auth .auth-google:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+.v-app-auth .auth-google-mark {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+}
+.v-app-auth .auth-switch,
+.v-app-auth .auth-support,
+.v-app-auth .auth-hint {
+  margin: 22px 0 0;
+  color: #c1d3ee;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+.v-app-auth .auth-switch a,
+.v-app-auth .auth-support a {
+  color: #9ce8f5;
+  font-weight: 600;
+  text-decoration: none;
+}
+.v-app-auth .auth-hint {
+  margin-top: 9px;
+  color: #96abcc;
+  font-size: 12px;
+}
+.v-app-auth .auth-support {
+  margin-top: 12px;
+  font-size: 13px;
+}
+.v-app-auth .auth-message {
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border: 1px solid rgb(255 185 185 / 34%);
+  border-radius: 12px;
+  background: rgb(139 40 49 / 25%);
+  color: #ffd1d1;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.v-app-auth .demo-box {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  border-color: rgb(117 213 237 / 30%);
+  border-radius: 14px;
+  background: rgb(117 213 237 / 9%);
+  color: #d9e7f9;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.v-app-auth .demo-box strong {
+  color: #fff;
+  font-size: 13px;
+}
+.v-app-auth .demo-box code {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgb(4 17 46 / 72%);
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+.v-app-auth .auth-form .form-section {
+  margin-bottom: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.v-app-auth .auth-form .form-section legend {
+  padding: 0 0 10px;
+  color: #c8d8ee;
+  font-size: 14px;
+}
+@media (max-width: 767px) {
+  .v-app-auth .auth-shell {
+    align-items: start;
+    padding: 20px 14px max(24px, env(safe-area-inset-bottom));
+  }
+  .v-app-auth .auth-form {
+    padding: 26px 22px 28px;
+    border-radius: 22px;
+  }
+  .v-app-auth .auth-brand {
+    margin-bottom: 22px;
+  }
+}
+@media (max-width: 359px) {
+  .v-app-auth .auth-shell {
+    padding-inline: 10px;
+  }
+  .v-app-auth .auth-form {
+    padding-inline: 18px;
+  }
 }

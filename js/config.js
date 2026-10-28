@@ -13,6 +13,7 @@ export const APP = {
   slotMinutes: 30,
   storageKey: "vezz.db.v2",
   sessionKey: "vezz.session.v2",
+  oauthRedirectKey: "vezz.oauth.redirect.v1",
   supabaseKey: "vezz.supabase.v1",
   demoPassword: "demo123",
   // Credenciais administrativas NÃO ficam no frontend (segurança): admin é o

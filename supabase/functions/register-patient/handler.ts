@@ -35,12 +35,13 @@ function validationError(body: any) {
   const nome = typeof body?.nome === "string" ? body.nome.trim() : "";
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const senha = typeof body?.senha === "string" ? body.senha : "";
+  const google = body?.google === true;
   const telefone = digits(body?.telefone);
   if (nome.length < 3 || nome.length > 160 || !/\S+\s+\S+/.test(nome)) return "Informe nome e sobrenome.";
   if (typeof body?.cpf !== "string" || digits(body.cpf).length !== 11 || !validarCPF(body.cpf)) return "CPF inv\u00e1lido.";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) return "Informe um e-mail v\u00e1lido.";
   if (typeof body?.telefone !== "string" || (telefone.length !== 10 && telefone.length !== 11)) return "Informe um telefone v\u00e1lido.";
-  if (senha.length < 6 || senha.length > 128) return "A senha precisa ter de 6 a 128 caracteres.";
+  if (!google && (senha.length < 6 || senha.length > 128)) return "A senha precisa ter de 6 a 128 caracteres.";
   return null;
 }
 
@@ -77,8 +78,24 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
     const telefone = body.telefone.trim();
     const senha = body.senha;
     let clients: { admin: any; publicClient: any };
+    let authenticatedGoogleUser: any = null;
     try {
       clients = createClients();
+      if (body.google === true) {
+        const accessToken = req.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+        if (!accessToken) return json({ error: "Entre novamente com o Google para concluir o cadastro." }, 401);
+        const verified = await clients.publicClient.auth.getUser(accessToken);
+        authenticatedGoogleUser = verified?.data?.user;
+        const linkedGoogle = authenticatedGoogleUser?.app_metadata?.provider === "google"
+          || authenticatedGoogleUser?.app_metadata?.providers?.includes("google")
+          || authenticatedGoogleUser?.identities?.some((identity: any) => identity.provider === "google");
+        const verifiedEmail = authenticatedGoogleUser?.email?.trim().toLowerCase();
+        if (verified?.error || !authenticatedGoogleUser?.id || !linkedGoogle || verifiedEmail !== email
+          || !(authenticatedGoogleUser.email_confirmed_at || authenticatedGoogleUser.confirmed_at)
+          || authenticatedGoogleUser?.app_metadata?.role === "admin") {
+          return json({ error: "Não foi possível validar a conta Google. Entre novamente e tente outra vez." }, 401);
+        }
+      }
       const [cpfLookup, emailLookup, managerLookup] = await Promise.all([
         clients.admin.from("paciente").select("id_paciente").eq("cpf", cpf).maybeSingle(),
         clients.admin.from("paciente").select("id_paciente").eq("email", email).maybeSingle(),
@@ -106,6 +123,24 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
       session: { access_token: session.access_token, refresh_token: session.refresh_token },
       patient,
     });
+    if (body.google === true) {
+      try {
+        profileInsertStarted = true;
+        const inserted = await insertProfile(authenticatedGoogleUser.id);
+        if (inserted.error) {
+          if (inserted.error.code === "23505") {
+            return json({ error: "Este CPF ou e-mail já está cadastrado. Confira os dados ou entre com sua conta." }, 409);
+          }
+          return json({ error: "Não foi possível concluir o cadastro. Tente novamente." }, 400);
+        }
+        if (!inserted.data?.id_paciente) {
+          return json({ error: "Não foi possível confirmar o cadastro. Revise seus dados e tente novamente." }, 503);
+        }
+        return json({ patient: inserted.data });
+      } catch {
+        return json({ error: "Não foi possível confirmar o cadastro. Revise seus dados e tente novamente." }, 503);
+      }
+    }
     const recoverOrphan = async () => {
       try {
         const login = await clients.publicClient.auth.signInWithPassword({ email, password: senha });
