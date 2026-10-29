@@ -766,6 +766,31 @@ export class SupabaseAdapter {
     history.replaceState(history.state, "", `${location.pathname}${route}`);
   }
 
+  beginGoogleOnboarding(oauthSession, redirect, profileLookupFailed = false) {
+    const user = oauthSession?.user || {};
+    const hasGoogleIdentity = user.app_metadata?.provider === "google"
+      || user.app_metadata?.providers?.includes("google")
+      || user.identities?.some((identity) => identity.provider === "google");
+    const email = user.email?.trim().toLowerCase();
+    if (!oauthSession?.access_token || !oauthSession?.refresh_token || !email || !hasGoogleIdentity
+      || !(user.email_confirmed_at || user.confirmed_at)) return false;
+
+    this.session = {
+      access_token: oauthSession.access_token,
+      refresh_token: oauthSession.refresh_token,
+      oauth_onboarding: true,
+      email,
+      nome: user.user_metadata?.full_name || user.user_metadata?.name || email.split("@")[0],
+      foto: user.user_metadata?.avatar_url || "",
+      oauth_redirect: redirect,
+    };
+    this.persistSession();
+    this.setOAuthRoute(profileLookupFailed
+      ? "#/cadastro?oauth=google&oauth_error=profile"
+      : "#/cadastro?oauth=google");
+    return true;
+  }
+
   async handleGoogleOAuthCallback() {
     const callbackParams = new URLSearchParams(location.search || "");
     const providerError = callbackParams.get("error_code") || callbackParams.get("error");
@@ -782,10 +807,11 @@ export class SupabaseAdapter {
       : "#/paciente";
     sessionStorage.removeItem(APP.oauthRedirectKey);
 
+    let oauthSession = null;
     try {
       const authClient = await this.googleOAuthClient();
       const { data, error } = await authClient.auth.getSession();
-      const oauthSession = data?.session;
+      oauthSession = data?.session || null;
       if (error || !oauthSession?.access_token || !oauthSession?.refresh_token) {
         throw error || new Error("Não foi possível validar o retorno do Google.");
       }
@@ -799,22 +825,8 @@ export class SupabaseAdapter {
         profile = await this.currentProfile();
       } catch (profileError) {
         if (profileError.code !== "VEZZ_PROFILE_MISSING") throw profileError;
-        const user = oauthSession.user || {};
-        const hasGoogleIdentity = user.app_metadata?.provider === "google"
-          || user.app_metadata?.providers?.includes("google")
-          || user.identities?.some((identity) => identity.provider === "google");
-        if (!user.email || !hasGoogleIdentity) throw profileError;
-        this.session = {
-          ...this.session,
-          oauth_onboarding: true,
-          email: user.email.trim().toLowerCase(),
-          nome: user.user_metadata?.full_name || user.user_metadata?.name || user.email.split("@")[0],
-          foto: user.user_metadata?.avatar_url || "",
-          oauth_redirect: safeRedirect,
-        };
-        this.persistSession();
-        this.setOAuthRoute("#/cadastro?oauth=google");
-        return true;
+        if (this.beginGoogleOnboarding(oauthSession, safeRedirect)) return true;
+        throw profileError;
       }
 
       this.session = { ...this.session, ...profile };
@@ -822,11 +834,43 @@ export class SupabaseAdapter {
       this.setOAuthRoute(safeRedirect);
       return true;
     } catch {
+      // Google may already have created an Auth user before a VEZZ profile lookup
+      // fails. Keep a verified session so the person can finish or cancel onboarding.
+      if (this.beginGoogleOnboarding(oauthSession, safeRedirect, true)) return true;
       this.session = null;
-      localStorage.removeItem(APP.sessionKey);
+      this.persistSession();
       this.setOAuthRoute("#/login?oauth_error=google");
       return true;
     }
+  }
+
+  async cancelGoogleOnboarding() {
+    if (!this.session?.oauth_onboarding || !this.session?.access_token) {
+      throw new Error("N\u00e3o h\u00e1 um cadastro Google pendente para cancelar.");
+    }
+    const sendCancellation = () => fetch(`${this.url}/functions/v1/cancel-google-onboarding`, {
+      method: "POST",
+      headers: {
+        apikey: this.key,
+        Authorization: `Bearer ${this.session.access_token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    let response = await sendCancellation();
+    if (response.status === 401 && this.session?.refresh_token && await this.refreshSession()) {
+      response = await sendCancellation();
+    }
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "N\u00e3o foi poss\u00edvel cancelar o cadastro Google.");
+
+    try {
+      const authClient = await this.googleOAuthClient();
+      await authClient.auth.signOut({ scope: "local" });
+    } catch { /* The server has already removed the unlinked Auth user. */ }
+    this.session = null;
+    sessionStorage.removeItem(APP.oauthRedirectKey);
+    this.persistSession();
+    return true;
   }
 
   headers(extra = {}) {

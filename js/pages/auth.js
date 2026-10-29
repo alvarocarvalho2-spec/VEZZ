@@ -136,7 +136,7 @@ export function renderLogin(root, { session, query }) {
   });
 }
 
-export function renderRegisterPatient(root, { session }) {
+export function renderRegisterPatient(root, { session, query = {} }) {
   const pendingGoogle = db().getPendingGoogleProfile?.() || null;
   if (session && !pendingGoogle) {
     location.hash = session.role === "admin" ? "#/admin-vezz" : session.role === "gestor" ? "#/gestor" : "#/paciente";
@@ -152,6 +152,7 @@ export function renderRegisterPatient(root, { session }) {
        <h1 id="auth-title">Crie sua conta no VEZZ</h1>
        <p>Cadastre-se para agendar consultas e acompanhar sua vez na fila.</p>
      </div>
+     ${pendingGoogle && query.oauth_error === "profile" ? `<p class="auth-message" role="status">O Google confirmou o acesso, mas n\u00e3o conseguimos verificar seu perfil no VEZZ. Tente concluir o cadastro ou escolha o cadastro por e-mail.</p>` : ""}
      <form id="reg">
        ${authField({ name: "nome", label: "Nome completo", placeholder: "Ana Clara Silva", value: pendingGoogle?.nome || "", required: true, autocomplete: "name" })}
        <div class="field-row">
@@ -161,13 +162,31 @@ export function renderRegisterPatient(root, { session }) {
        ${pendingGoogle ? `<div class="field auth-field"><div class="auth-field-heading"><label for="email">E-mail</label><span class="auth-verified">Verificado pelo Google</span></div><div class="auth-input-control"><span class="auth-field-icon">${authIcons.email}</span><input id="email" name="email" type="email" value="${escapeHtml(pendingGoogle.email)}" autocomplete="email" readonly required></div><div class="field-error" data-error-for="email" hidden></div></div>` : authField({ name: "email", label: "E-mail", type: "email", placeholder: "voce@email.com", required: true, autocomplete: "email" })}
        ${pendingGoogle ? "" : authField({ name: "senha", label: "Senha", type: "password", placeholder: "Crie uma senha", hint: "Use pelo menos 6 caracteres.", required: true, autocomplete: "new-password" })}
        <button class="btn btn-lg btn-block auth-submit" type="submit">${pendingGoogle ? "Concluir cadastro" : "Criar conta"}</button>
-       <p class="auth-switch">${pendingGoogle ? "Entre com outro e-mail?" : "Já tem conta?"} <a href="#/login">${pendingGoogle ? "Voltar ao login" : "Entrar"}</a></p>
+       ${pendingGoogle ? `<p class="auth-switch">Já tem conta VEZZ? <a href="#/login">Entrar</a></p>` : `<p class="auth-switch">Já tem conta? <a href="#/login">Entrar</a></p>`}
        <p class="auth-support">Para cadastrar uma clínica, <a href="#/solicitar-clinica">envie uma solicitação</a>.</p>
-     </form>`,
+     </form>
+     ${pendingGoogle ? `<p class="auth-hint">Se preferir e-mail e senha, o acesso Google sem perfil VEZZ ser\u00e1 removido antes de abrir o cadastro manual.</p><p class="auth-support"><a class="auth-inline-link" id="google-manual-signup" href="#/cadastro?modo=email">Usar e-mail e senha</a></p>` : ""}`,
     "shy",
     "auth-card-register",
   );
   const form = root.querySelector("#reg");
+  root.querySelector("#google-manual-signup")?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    const link = event.currentTarget;
+    if (link.getAttribute("aria-disabled") === "true" || form.querySelector('[type="submit"]')?.disabled) return;
+    link.setAttribute("aria-disabled", "true");
+    form.querySelector('[type="submit"]')?.setAttribute("disabled", "");
+    link.textContent = "Cancelando etapa Google...";
+    try {
+      await db().cancelGoogleOnboarding();
+      location.hash = "#/cadastro?modo=email";
+    } catch (error) {
+      toast(error.message, "danger");
+      link.removeAttribute("aria-disabled");
+      form.querySelector('[type="submit"]')?.removeAttribute("disabled");
+      link.textContent = "Usar e-mail e senha";
+    }
+  });
   groupForm(form, [["Seus dados", ["nome", "cpf", "telefone"]], ["Acesso à conta", ["email", "senha"]]]);
   bindPasswordToggles(form);
   bindMasks(form);

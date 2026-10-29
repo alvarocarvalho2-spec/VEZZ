@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.register-patient]
 verify_jwt = false
+
+[functions.cancel-google-onboarding]
+verify_jwt = true

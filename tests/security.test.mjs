@@ -9,7 +9,13 @@ globalThis.window = new EventTarget();
 globalThis.location = { hash: '#/', origin: 'http://localhost:8080', pathname: '/' };
 globalThis.history = { replaceState(_a,_b,url) { location.hash=url; } };
 let storage;
-beforeEach(() => { storage=new Map(); globalThis.localStorage={ getItem:k=>storage.get(k)??null, setItem:(k,v)=>storage.set(k,String(v)), removeItem:k=>storage.delete(k) }; location.hash='#/'; });
+let sessionStorageData;
+beforeEach(() => {
+  storage=new Map(); sessionStorageData=new Map();
+  globalThis.localStorage={ getItem:k=>storage.get(k)??null, setItem:(k,v)=>storage.set(k,String(v)), removeItem:k=>storage.delete(k) };
+  globalThis.sessionStorage={ getItem:k=>sessionStorageData.get(k)??null, setItem:(k,v)=>sessionStorageData.set(k,String(v)), removeItem:k=>sessionStorageData.delete(k) };
+  location.hash='#/'; location.search='';
+});
 afterEach(() => { globalThis.fetch=originalFetch; });
 const response = (data,status=200) => new Response(status===204?null:JSON.stringify(data),{status});
 const remote = () => { const api=new SupabaseAdapter({url:'https://supabase.example.test',anonKey:'public-test-key'}); api.session={access_token:'expired',refresh_token:'refresh',role:'paciente'}; return api; };
@@ -105,6 +111,40 @@ test('incomplete signup is not persisted as a fictitious authenticated profile',
   globalThis.fetch=async()=>response({id:'confirmation-required'});
   const api=new SupabaseAdapter({url:'https://supabase.example.test',anonKey:'public'});
   await assert.rejects(api.signUpPatient({email:'test@example.test',senha:'password',nome:'Teste QA'}),/confirm/i);assert.equal(api.getSession(),null);
+});
+test('Google callback preserves a verified onboarding session when the VEZZ profile lookup fails', async () => {
+  const api=new SupabaseAdapter({url:'https://supabase.example.test',anonKey:'public'});
+  const user={id:'google-user',email:'google@example.test',email_confirmed_at:'2026-10-28T12:00:00.000Z',app_metadata:{provider:'google',providers:['google']},user_metadata:{full_name:'Google Patient'}};
+  api.oauthClientPromise=Promise.resolve({auth:{getSession:async()=>({data:{session:{access_token:'google-access',refresh_token:'google-refresh',user}},error:null})}});
+  location.search='?code=authorization-code';
+  globalThis.fetch=async url=>String(url).includes('/auth/v1/user')?response(user):response({message:'profile service unavailable'},503);
+  await api.handleGoogleOAuthCallback();
+  assert.equal(api.getPendingGoogleProfile().email,'google@example.test');
+  assert.equal(api.session.oauth_onboarding,true);
+  assert.equal(JSON.parse(localStorage.getItem('vezz.session.v2')).oauth_onboarding,true);
+  assert.match(location.hash,/#\/cadastro\?oauth=google&oauth_error=profile/);
+});
+test('canceling Google onboarding removes only the pending app session after server confirmation',async()=>{
+  const api=remote();
+  api.session={access_token:'google-access',refresh_token:'google-refresh',oauth_onboarding:true,email:'google@example.test'};
+  sessionStorage.setItem('vezz.oauth.redirect.v1','#/paciente/fila');
+  let request,signOutScope;
+  api.oauthClientPromise=Promise.resolve({auth:{signOut:async options=>{signOutScope=options.scope;return {error:null};}}});
+  globalThis.fetch=async(url,options)=>{request={url:String(url),options};return response({ok:true});};
+  assert.equal(await api.cancelGoogleOnboarding(),true);
+  assert.equal(request.url,'https://supabase.example.test/functions/v1/cancel-google-onboarding');
+  assert.equal(request.options.method,'POST');
+  assert.equal(request.options.headers.Authorization,'Bearer google-access');
+  assert.equal(signOutScope,'local');
+  assert.equal(api.session,null);
+  assert.equal(localStorage.getItem('vezz.session.v2'),null);
+  assert.equal(sessionStorage.getItem('vezz.oauth.redirect.v1'),null);
+});
+test('failed Google onboarding cancellation keeps the pending session available for retry',async()=>{
+  const api=remote();api.session={access_token:'google-access',refresh_token:'google-refresh',oauth_onboarding:true};
+  globalThis.fetch=async()=>response({error:'profile exists'},409);
+  await assert.rejects(api.cancelGoogleOnboarding(),/profile exists/);
+  assert.equal(api.session.oauth_onboarding,true);
 });
 test('local reschedule cannot overwrite occupied same-time slot on another day', async () => {
   const api=new LocalAdapter();await api.init();
