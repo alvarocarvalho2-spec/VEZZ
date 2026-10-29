@@ -684,6 +684,22 @@ table.data tr:hover td { background: color-mix(in srgb, var(--teal-mist) 70%, va
 .auth-visual h2 { color: #fff; font-size: 42px; max-width: 12ch; }
 .auth-visual p { color: #c5d0ea; max-width: 34ch; }
 .auth-form { padding: 48px 8vw 64px; }
+.auth-legal-links {
+  max-width: 42ch;
+  margin: 28px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.auth-legal-links a {
+  color: var(--teal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.auth-legal-links a:focus-visible {
+  outline: 3px solid #75d5ed;
+  outline-offset: 3px;
+}
 .demo-box {
   background: var(--teal-mist);
   border: 1px solid var(--line-strong);

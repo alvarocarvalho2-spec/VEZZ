@@ -67,6 +67,7 @@ export function authLayout(form, botExpr = "calm", variant = "") {
           <span>VEZZ</span>
         </a>
         ${form}
+        <p class="auth-legal-links">Ao usar sua conta, você pode consultar a <a href="/politica-de-privacidade.html">Política de Privacidade</a> e os <a href="/termos-de-servico.html">Termos de Serviço</a>.</p>
       </section>
     </main>
   `;

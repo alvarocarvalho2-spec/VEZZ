@@ -155,6 +155,8 @@ export function Footer() {
             <Link to="/como-funciona">Como funciona</Link>
             <Link to="/solicitar-clinica">Cadastre sua clínica</Link>
             <Link to="/login">Acessar minha conta</Link>
+            <a href="/politica-de-privacidade.html">Política de Privacidade</a>
+            <a href="/termos-de-servico.html">Termos de Serviço</a>
           </nav>
         </div>
         <div className="v-footer-bottom">
