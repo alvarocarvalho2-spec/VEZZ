@@ -80,9 +80,9 @@ export function renderLogin(root, { session, query }) {
   }
   root.innerHTML = authLayout(
     `<div class="auth-heading">
-       <p class="auth-eyebrow">Área do paciente</p>
+       <p class="auth-eyebrow">Acesso para pacientes e gestores</p>
        <h1 id="auth-title">Acesse sua conta</h1>
-       <p>Veja suas consultas e acompanhe sua posição na fila.</p>
+       <p>Acesse suas consultas, acompanhe a fila ou gerencie a rotina da clínica.</p>
      </div>
      ${!isSupabaseEnabled() ? `<div class="demo-box">
        <strong>Acesso de demonstração</strong>
