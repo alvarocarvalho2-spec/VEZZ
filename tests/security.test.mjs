@@ -124,6 +124,19 @@ test('Google callback preserves a verified onboarding session when the VEZZ prof
   assert.equal(JSON.parse(localStorage.getItem('vezz.session.v2')).oauth_onboarding,true);
   assert.match(location.hash,/#\/cadastro\?oauth=google&oauth_error=profile/);
 });
+test('a new Google account without a VEZZ profile opens signup without an error state', async () => {
+  const api=new SupabaseAdapter({url:'https://supabase.example.test',anonKey:'public'});
+  const user={id:'new-google-user',email:'new.google@example.test',email_confirmed_at:'2026-10-28T12:00:00.000Z',app_metadata:{provider:'google',providers:['google']},user_metadata:{full_name:'New Google Patient'}};
+  api.oauthClientPromise=Promise.resolve({auth:{getSession:async()=>({data:{session:{access_token:'google-access',refresh_token:'google-refresh',user}},error:null})}});
+  location.search='?code=authorization-code';
+  globalThis.fetch=async url=>String(url).includes('/auth/v1/user')?response(user):response([]);
+  await api.handleGoogleOAuthCallback();
+  assert.equal(api.getPendingGoogleProfile().email,'new.google@example.test');
+  assert.equal(api.getPendingGoogleProfile().nome,'New Google Patient');
+  assert.equal(api.session.oauth_onboarding,true);
+  assert.equal(location.hash,'/#/cadastro?oauth=google');
+  assert.doesNotMatch(location.hash,/error/);
+});
 test('canceling Google onboarding removes only the pending app session after server confirmation',async()=>{
   const api=remote();
   api.session={access_token:'google-access',refresh_token:'google-refresh',oauth_onboarding:true,email:'google@example.test'};
