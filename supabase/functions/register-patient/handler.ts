@@ -96,12 +96,23 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
           return json({ error: "Não foi possível validar a conta Google. Entre novamente e tente outra vez." }, 401);
         }
       }
-      const [cpfLookup, emailLookup, managerLookup] = await Promise.all([
+      const [cpfLookup, emailLookup, managerLookup, googleProfileLookup] = await Promise.all([
         clients.admin.from("paciente").select("id_paciente").eq("cpf", cpf).maybeSingle(),
         clients.admin.from("paciente").select("id_paciente").eq("email", email).maybeSingle(),
         clients.admin.from("gestor").select("id_gestor").eq("email", email).maybeSingle(),
+        body.google === true
+          ? clients.admin.from("paciente").select("id_paciente,nome,email,foto").eq("auth_id", authenticatedGoogleUser.id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
       ]);
-      if (cpfLookup.error || emailLookup.error || managerLookup.error) throw Error("Account lookup failed");
+      if (cpfLookup.error || emailLookup.error || managerLookup.error || googleProfileLookup.error) throw Error("Account lookup failed");
+      if (googleProfileLookup.data) {
+        if (googleProfileLookup.data.email?.trim().toLowerCase() !== email) {
+          return json({ error: "Esta conta Google já está vinculada a outro cadastro. Entre em contato com o suporte." }, 409);
+        }
+        // Retrying after a lost response must finish the same Google onboarding,
+        // not report the profile created by the previous attempt as a duplicate.
+        return json({ patient: googleProfileLookup.data });
+      }
       if (cpfLookup.data) return json({ error: "J\u00e1 existe um cadastro com este CPF. Entre com sua conta ou recupere a senha." }, 409);
       if (emailLookup.data) return json({ error: "J\u00e1 existe uma conta com este e-mail. Entre ou recupere sua senha." }, 409);
       if (managerLookup.data) return json({ error: "Este e-mail j\u00e1 tem acesso de gestor. Entre na sua conta." }, 409);

@@ -30,6 +30,10 @@ export default function LegacyPage({
     const root = ref.current!;
     let disposed = false;
     const session = db().getSession() as Session | null;
+    if (db().getPendingGoogleProfile?.() && location.pathname !== "/cadastro") {
+      navigate("/cadastro?oauth=google", { replace: true });
+      return;
+    }
     if (role && !session) {
       navigate(
         `/login?redirect=${encodeURIComponent("#" + location.pathname + location.search)}`,

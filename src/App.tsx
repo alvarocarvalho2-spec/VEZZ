@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useState } from "react";
-import { Link, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import { db, initDb } from "../js/lib/db.js";
 import {
@@ -48,6 +48,8 @@ export default function App() {
     "/recuperar-senha",
     "/solicitar-clinica",
   ].includes(location.pathname);
+  const hasPendingGoogleSignup = ready && Boolean(db().getPendingGoogleProfile?.());
+  const mustCompleteGoogleSignup = hasPendingGoogleSignup && location.pathname !== "/cadastro";
   useEffect(() => {
     const initialHash = window.location.hash;
     initialization ??= initDb();
@@ -116,6 +118,8 @@ export default function App() {
         </main>
       ) : !ready ? (
         <Loading />
+      ) : mustCompleteGoogleSignup ? (
+        <Navigate to="/cadastro?oauth=google" replace />
       ) : (
         <motion.div
           key={location.pathname}

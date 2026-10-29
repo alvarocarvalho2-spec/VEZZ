@@ -4,7 +4,7 @@
 import { APP, DEFAULT_HOURS, isSupabaseEnabled } from "../config.js";
 import { db } from "../lib/db.js";
 import { applyErrors, validarCNPJ, validarCPF, validarEmail, validarNome, validarSenha, validarTelefone, validarCEP } from "../lib/validators.js";
-import { bindMasks, bindMultiStepForm, bindPhotoUpload, bindSubmit, bot, field, multiStepProgress, photoUpload, toast } from "../lib/ui.js";
+import { bindMasks, bindMultiStepForm, bindPhotoUpload, bindSubmit, bot, field, modal, multiStepProgress, photoUpload, toast } from "../lib/ui.js";
 import { escapeHtml } from "../lib/utils.js";
 
 const manualSignupPrefillKey = "vezz.signup.prefill.v1";
@@ -157,13 +157,11 @@ export function renderRegisterPatient(root, { session, query = {} }) {
     return;
   }
   const patientSteps = ["Dados pessoais", "Acesso"];
-  root.innerHTML = authLayout(
-    `<div class="auth-heading">
+  const registerContent = `<div class="auth-heading">
        <p class="auth-eyebrow">Cadastro de paciente</p>
        <h1 id="auth-title">${pendingGoogle ? "Complete seu cadastro" : "Crie sua conta no VEZZ"}</h1>
        <p>${pendingGoogle ? "Seu acesso Google foi confirmado. Confira o nome e o e-mail e preencha os dados que faltam para criar seu perfil VEZZ." : "Cadastre-se para agendar consultas e acompanhar sua vez na fila."}</p>
      </div>
-     ${pendingGoogle && query.oauth_error === "profile" ? `<p class="auth-message" role="status">Seu e-mail foi confirmado pelo Google e j\u00e1 est\u00e1 preenchido. Complete os dados abaixo para continuar.</p>` : ""}
      <form id="reg" class="auth-multistep" novalidate>
        ${multiStepProgress(patientSteps, "Etapas do cadastro")}
        <fieldset class="auth-step-panel" data-step-panel aria-labelledby="patient-step-personal-title">
@@ -187,14 +185,42 @@ export function renderRegisterPatient(root, { session, query = {} }) {
          <button class="btn btn-lg auth-step-next" type="button" data-step-next>Continuar</button>
          <button class="btn btn-lg auth-submit auth-step-submit" type="submit" data-step-submit hidden>${pendingGoogle ? "Concluir cadastro" : "Criar conta"}</button>
        </div>
-       ${pendingGoogle ? `<p class="auth-switch">Já tem conta VEZZ? <a href="#/login">Entrar</a></p>` : `<p class="auth-switch">Já tem conta? <a href="#/login">Entrar</a></p>`}
-       <p class="auth-support">Para cadastrar uma clínica, <a href="#/solicitar-clinica">envie uma solicitação</a>.</p>
+       ${pendingGoogle ? "" : `<p class="auth-switch">Já tem conta? <a href="#/login">Entrar</a></p>`}
+       ${pendingGoogle ? "" : `<p class="auth-support">Para cadastrar uma clínica, <a href="#/solicitar-clinica">envie uma solicitação</a>.</p>`}
      </form>
-     ${pendingGoogle ? `<p class="auth-hint">O Google n\u00e3o envia sua senha ao VEZZ. Se preferir cadastro por e-mail, seu nome e e-mail ser\u00e3o preenchidos e voc\u00ea criar\u00e1 uma senha. O acesso Google sem perfil VEZZ ser\u00e1 removido antes.</p><p class="auth-support"><a class="auth-inline-link" id="google-manual-signup" href="#/cadastro?modo=email">Usar e-mail e senha</a></p>` : ""}`,
-    "shy",
-    "auth-card-register",
-  );
-  const form = root.querySelector("#reg");
+      ${pendingGoogle ? `<p class="auth-hint">O Google n\u00e3o envia sua senha ao VEZZ. Se preferir cadastro por e-mail, seu nome e e-mail ser\u00e3o preenchidos e voc\u00ea criar\u00e1 uma senha. O acesso Google sem perfil VEZZ ser\u00e1 removido antes.</p><p class="auth-support"><a class="auth-inline-link" id="google-manual-signup" href="#/cadastro?modo=email">Usar e-mail e senha</a></p>` : ""}`;
+  root.innerHTML = authLayout(registerContent, "shy", "auth-card-register");
+
+  let form = root.querySelector("#reg");
+  const manualSignupLink = root.querySelector("#google-manual-signup");
+  if (pendingGoogle && form) {
+    const pendingForm = form;
+    root.innerHTML = authLayout(
+      `<div class="auth-heading">
+         <p class="auth-eyebrow">Acesso com Google</p>
+         <h1 id="auth-title">Sua conta está quase pronta</h1>
+         <p>Complete seus dados pessoais para liberar o painel do VEZZ.</p>
+       </div>`,
+      "shy",
+      "auth-card-register",
+    );
+    const dialog = modal({
+      title: "Complete seu cadastro",
+      body: `<div class="v-app-auth google-onboarding-form"><p class="auth-step-description">Seu e-mail foi confirmado pelo Google. Preencha os dados restantes para criar seu perfil.</p></div>`,
+      expression: "calm",
+      dismissible: false,
+      className: "google-onboarding-dialog",
+    });
+    const modalBody = dialog.el.querySelector(".google-onboarding-form");
+    pendingForm.classList.add("auth-form");
+    modalBody.append(pendingForm);
+    if (manualSignupLink) {
+      manualSignupLink.textContent = "Prefiro usar e-mail e senha";
+      modalBody.append(manualSignupLink);
+    }
+    form = pendingForm;
+    form.querySelector('[name="nome"]')?.focus({ preventScroll: true });
+  }
   const stepper = bindMultiStepForm(form, {
     steps: patientSteps,
     validateStep(step) {
@@ -211,7 +237,7 @@ export function renderRegisterPatient(root, { session, query = {} }) {
       return errors;
     },
   });
-  root.querySelector("#google-manual-signup")?.addEventListener("click", async (event) => {
+  manualSignupLink?.addEventListener("click", async (event) => {
     event.preventDefault();
     const link = event.currentTarget;
     if (link.getAttribute("aria-disabled") === "true" || form.querySelector('[type="submit"]')?.disabled) return;
@@ -246,9 +272,9 @@ export function renderRegisterPatient(root, { session, query = {} }) {
       return;
     }
     try {
-      await db().signUpPatient({ ...data, google: !!pendingGoogle });
+      const createdSession = await db().signUpPatient({ ...data, google: !!pendingGoogle });
       toast("Conta criada. Bem-vindo ao VEZZ.", "ok");
-      location.hash = pendingGoogle?.redirect || "#/paciente";
+      location.hash = createdSession?.role === "gestor" ? "#/gestor" : createdSession?.role === "admin" ? "#/admin-vezz" : "#/paciente";
     } catch (err) {
       toast(err.message, "danger");
     }

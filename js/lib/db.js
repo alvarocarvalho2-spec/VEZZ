@@ -766,7 +766,7 @@ export class SupabaseAdapter {
     history.replaceState(history.state, "", `${location.pathname}${route}`);
   }
 
-  beginGoogleOnboarding(oauthSession, redirect, profileLookupFailed = false) {
+  beginGoogleOnboarding(oauthSession, redirect) {
     const user = oauthSession?.user || {};
     const hasGoogleIdentity = user.app_metadata?.provider === "google"
       || user.app_metadata?.providers?.includes("google")
@@ -785,9 +785,7 @@ export class SupabaseAdapter {
       oauth_redirect: redirect,
     };
     this.persistSession();
-    this.setOAuthRoute(profileLookupFailed
-      ? "#/cadastro?oauth=google&oauth_error=profile"
-      : "#/cadastro?oauth=google");
+    this.setOAuthRoute("#/cadastro?oauth=google");
     return true;
   }
 
@@ -801,10 +799,6 @@ export class SupabaseAdapter {
     }
     if (!callbackParams.has("code")) return false;
 
-    const redirect = String(sessionStorage.getItem(APP.oauthRedirectKey) || "#/paciente");
-    const safeRedirect = redirect.startsWith("#/") && !redirect.startsWith("#//") && !redirect.includes("\\")
-      ? redirect
-      : "#/paciente";
     sessionStorage.removeItem(APP.oauthRedirectKey);
 
     let oauthSession = null;
@@ -825,18 +819,18 @@ export class SupabaseAdapter {
         profile = await this.currentProfile();
       } catch (profileError) {
         if (profileError.code !== "VEZZ_PROFILE_MISSING") throw profileError;
-        if (this.beginGoogleOnboarding(oauthSession, safeRedirect)) return true;
+        if (this.beginGoogleOnboarding(oauthSession, "#/paciente")) return true;
         throw profileError;
       }
 
       this.session = { ...this.session, ...profile };
       this.persistSession();
-      this.setOAuthRoute(safeRedirect);
+      const dashboard = profile.role === "gestor" ? "#/gestor" : profile.role === "admin" ? "#/admin-vezz" : "#/paciente";
+      this.setOAuthRoute(dashboard);
       return true;
     } catch {
-      // Google may already have created an Auth user before a VEZZ profile lookup
-      // fails. Keep a verified session so the person can finish or cancel onboarding.
-      if (this.beginGoogleOnboarding(oauthSession, safeRedirect, true)) return true;
+      // Only an explicit missing-profile result starts onboarding. Network, Auth,
+      // and database failures must never be treated as permission to create a profile.
       this.session = null;
       this.persistSession();
       this.setOAuthRoute("#/login?oauth_error=google");
@@ -1107,6 +1101,9 @@ export class SupabaseAdapter {
     if (googleOnboarding) {
       if (!result.patient?.id_paciente) {
         throw new Error("Não foi possível confirmar o cadastro. Revise seus dados e tente novamente.");
+      }
+      if (result.patient.email?.trim().toLowerCase() !== this.session.email) {
+        throw new Error("O perfil encontrado não corresponde ao e-mail confirmado pelo Google. Entre em contato com o suporte.");
       }
       this.session = {
         ...this.session,

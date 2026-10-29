@@ -443,7 +443,7 @@ let activeModal = null;
 let modalId = 0;
 export function closeModal() { activeModal?.close("navigation", true); }
 
-export function modal({ title, body, actions = "", expression = "calm", onClose }) {
+export function modal({ title, body, actions = "", expression = "calm", onClose, dismissible = true, className = "" }) {
   activeModal?.close("replaced", true);
   // Old feedback must not cover a new decision, especially on a phone.
   document.querySelectorAll("#toasts .toast").forEach(node => node.dispatchEvent(new Event("dismiss")));
@@ -451,10 +451,10 @@ export function modal({ title, body, actions = "", expression = "calm", onClose 
   const id = `vezz-modal-${++modalId}`;
   const back = el(`
     <div class="modal-back" role="dialog" aria-modal="true" aria-labelledby="${id}" tabindex="-1">
-      <div class="modal">
+      <div class="modal${className ? ` ${escapeHtml(className)}` : ""}">
         <div class="modal-brand-bar">
           <span class="modal-brand"><span aria-hidden="true">${bot(expression)}</span><span class="feedback-brand">VEZZ</span></span>
-          <button type="button" class="icon-btn" data-close aria-label="Fechar janela">${icon("close")}</button>
+          ${dismissible ? `<button type="button" class="icon-btn" data-close aria-label="Fechar janela">${icon("close")}</button>` : ""}
         </div>
         <div class="modal-content"><h2 id="${id}">${escapeHtml(title)}</h2>
           <div class="modal-body">${body}</div>
@@ -489,14 +489,14 @@ export function modal({ title, body, actions = "", expression = "calm", onClose 
     return closed;
   };
   back.addEventListener("click", (e) => {
-    if (e.target === back || e.target.closest("[data-close]")) close();
+    if (dismissible && (e.target === back || e.target.closest("[data-close]"))) close();
   });
   document.body.appendChild(back);
   if (app) app.inert = true;
   if (innerWidth > document.documentElement.clientWidth) document.documentElement.style.scrollbarGutter = "stable";
   document.body.style.overflow = "hidden";
   back.addEventListener("keydown", e => {
-    if (e.key === "Escape") { e.preventDefault(); close(); }
+    if (e.key === "Escape" && dismissible) { e.preventDefault(); close(); }
     if (e.key !== "Tab") return;
     const focusable = [...back.querySelectorAll("button:not(:disabled), input:not([type=hidden]), select, textarea, a[href]")].filter(el => el.getClientRects().length);
     const first = focusable[0], last = focusable.at(-1);

@@ -1855,6 +1855,26 @@ h2:focus {
 }
 .modal-body { min-width: 0; overflow-wrap: anywhere; }
 .modal-body p { color: #526580; font-size: 15px; }
+.google-onboarding-dialog { width: min(680px, 100%); }
+.google-onboarding-dialog .v-app-auth.google-onboarding-form {
+  min-width: 0;
+  min-height: 0;
+  background: transparent;
+}
+.google-onboarding-dialog .v-app-auth.google-onboarding-form .auth-form {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--v-navy);
+  box-shadow: none;
+}
+.google-onboarding-dialog .auth-stepper { margin-bottom: 18px; }
+.google-onboarding-dialog .auth-step-actions { margin-top: 14px; }
+.google-onboarding-dialog .auth-support { margin: 14px 0 0; text-align: center; }
 .modal-notices { display: grid; gap: 10px; min-width: 0; }
 .modal-notices:empty { display: none; }
 .modal-notices .toast { margin-top: 12px; box-shadow: none; }
