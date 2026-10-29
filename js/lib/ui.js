@@ -4,6 +4,7 @@
 import { APP } from "../config.js";
 import { bot } from "./bot-sprite.js";
 import { addressLine, compressImageFile, el, escapeHtml, formatDateTime, formatMinutes, initials, maskCEP, maskCNPJ, maskCPF, maskPhone, statusTone, ticketCode } from "./utils.js";
+import { applyErrors } from "./validators.js";
 
 export function bindSubmit(form, handler) {
   let pending = false;
@@ -110,6 +111,96 @@ export function groupForm(form, groups) {
     rows[0].before(section);
     section.append(legend, ...rows);
   });
+}
+
+export function bindMultiStepForm(form, { steps = [], validateStep = () => ({}), onStepChange } = {}) {
+  const panels = [...(form?.querySelectorAll("[data-step-panel]") || [])];
+  if (!form || panels.length < 2) return { revealField: () => {} };
+
+  const indicators = [...form.querySelectorAll("[data-step-indicator]")];
+  const status = form.querySelector("[data-step-status]");
+  const progress = form.querySelector("[data-step-progress]");
+  const progressTrack = form.querySelector("[data-step-progressbar]");
+  const back = form.querySelector("[data-step-back]");
+  const next = form.querySelector("[data-step-next]");
+  const submit = form.querySelector("[data-step-submit]");
+  const lastStep = panels.length - 1;
+  let current = 0;
+
+  form.noValidate = true;
+
+  const setStep = (index, { focus = true } = {}) => {
+    current = Math.max(0, Math.min(lastStep, index));
+    panels.forEach((panel, panelIndex) => { panel.hidden = panelIndex !== current; });
+    indicators.forEach((indicator, stepIndex) => {
+      indicator.classList.toggle("is-current", stepIndex === current);
+      indicator.classList.toggle("is-complete", stepIndex < current);
+      if (stepIndex === current) indicator.setAttribute("aria-current", "step");
+      else indicator.removeAttribute("aria-current");
+    });
+
+    const label = steps[current] || `Etapa ${current + 1}`;
+    if (status) status.textContent = `Etapa ${current + 1} de ${panels.length}: ${label}`;
+    if (progress) progress.style.setProperty("--step-progress", `${((current + 1) / panels.length) * 100}%`);
+    if (progressTrack) {
+      progressTrack.setAttribute("aria-valuenow", String(current + 1));
+      progressTrack.setAttribute("aria-valuemax", String(panels.length));
+      progressTrack.setAttribute("aria-valuetext", `Etapa ${current + 1} de ${panels.length}: ${label}`);
+    }
+    if (back) back.hidden = current === 0;
+    if (next) next.hidden = current === lastStep;
+    if (submit) submit.hidden = current !== lastStep;
+    form.dataset.currentStep = String(current + 1);
+    onStepChange?.(current);
+
+    if (focus) {
+      const heading = panels[current].querySelector("[data-step-title]") || panels[current];
+      if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
+      heading.focus({ preventScroll: true });
+      heading.scrollIntoView?.({ block: "nearest", behavior: "auto" });
+    }
+  };
+
+  const validateCurrent = () => applyErrors(form, validateStep(current) || {});
+
+  next?.addEventListener("click", () => {
+    if (validateCurrent()) setStep(current + 1);
+  });
+  back?.addEventListener("click", () => setStep(current - 1));
+
+  // Pressing Enter follows the same step validation as the visible Continue button.
+  form.addEventListener("submit", event => {
+    if (current === lastStep) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (validateCurrent()) setStep(current + 1);
+  }, true);
+
+  setStep(0, { focus: false });
+
+  return {
+    get currentStep() { return current; },
+    revealField(name) {
+      const field = [...form.querySelectorAll("[name]")].find(control => control.name === name);
+      const panelIndex = panels.findIndex(panel => panel.contains(field));
+      if (panelIndex >= 0) setStep(panelIndex, { focus: false });
+      field?.focus();
+    },
+  };
+}
+
+export function multiStepProgress(steps, label) {
+  const names = steps.map(escapeHtml);
+  return `
+    <div class="auth-stepper">
+      <p class="auth-step-status" data-step-status role="status" aria-live="polite"></p>
+      <ol class="auth-step-list" style="--step-count: ${names.length}" aria-label="${escapeHtml(label)}">
+        ${names.map((name, index) => `<li data-step-indicator aria-label="Etapa ${index + 1}: ${name}"${index === 0 ? ' aria-current="step"' : ""}><span class="auth-step-number">${index + 1}</span><span class="auth-step-label">${name}</span></li>`).join("")}
+      </ol>
+      <div class="auth-step-progress" data-step-progressbar role="progressbar" aria-label="${escapeHtml(label)}" aria-valuemin="1" aria-valuemax="${names.length}" aria-valuenow="1" aria-valuetext="Etapa 1 de ${names.length}: ${names[0]}">
+        <span data-step-progress style="--step-progress: ${100 / names.length}%"></span>
+      </div>
+    </div>`;
 }
 
 function icon(name) {
@@ -488,6 +579,8 @@ export function bindMasks(root) {
   apply("cpf", maskCPF);
   apply("cnpj", maskCNPJ);
   apply("telefone", maskPhone);
+  apply("telefone_clinica", maskPhone);
+  apply("telefone_responsavel", maskPhone);
   apply("cep", maskCEP);
 }
 

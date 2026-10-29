@@ -4258,6 +4258,193 @@ dialog.v-clinic-location-dialog::backdrop {
   width: 100%;
   max-width: none;
 }
+.v-app-auth .auth-multistep {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.v-app-auth .auth-stepper {
+  margin: 0 0 26px;
+}
+.v-app-auth .auth-step-status {
+  margin: 0 0 12px;
+  color: #536782;
+  font-size: 13px;
+  font-weight: 600;
+}
+.v-app-auth .auth-step-list {
+  display: grid;
+  grid-template-columns: repeat(var(--step-count), minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.v-app-auth .auth-step-list li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: #6a7d96;
+}
+.v-app-auth .auth-step-number {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border: 1px solid #c7d5e7;
+  border-radius: 50%;
+  background: #fff;
+  color: #61758f;
+  font-size: 13px;
+  font-weight: 700;
+}
+.v-app-auth .auth-step-list li.is-current {
+  color: var(--v-navy);
+}
+.v-app-auth .auth-step-list li.is-current .auth-step-number {
+  border-color: var(--v-royal);
+  background: var(--v-royal);
+  color: #fff;
+}
+.v-app-auth .auth-step-list li.is-complete .auth-step-number {
+  border-color: #b6cbed;
+  background: #eaf3fc;
+  color: var(--v-royal);
+}
+.v-app-auth .auth-step-label {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.v-app-auth .auth-step-progress {
+  height: 4px;
+  margin-top: 11px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2ebf6;
+}
+.v-app-auth .auth-step-progress > span {
+  display: block;
+  width: var(--step-progress, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--v-royal);
+}
+.v-app-auth .auth-step-panel {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.v-app-auth .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.v-app-auth .auth-step-title {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 6px;
+  color: var(--v-navy);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.25;
+  border-radius: 4px;
+}
+.v-app-auth .auth-step-title:focus {
+  outline: none;
+}
+.v-app-auth .auth-step-title:focus-visible {
+  outline: 2px solid var(--v-royal);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.v-app-auth .auth-step-description {
+  margin: 0 0 20px;
+  color: #60748f;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.v-app-auth .auth-step-note {
+  margin: 4px 0 18px;
+  padding: 12px 14px;
+  border-left: 3px solid #7ca6de;
+  background: #edf4fc;
+  color: #405a7a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.v-app-auth .auth-step-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 5px;
+}
+.v-app-auth .auth-step-actions [hidden] {
+  display: none !important;
+}
+.v-app-auth .auth-step-actions .btn {
+  min-height: 52px;
+  margin: 0;
+}
+.v-app-auth .auth-step-actions [data-step-back] {
+  flex: 0 0 34%;
+}
+.v-app-auth .auth-step-actions [data-step-next],
+.v-app-auth .auth-step-actions [data-step-submit] {
+  flex: 1 1 auto;
+}
+.v-app-auth .auth-step-actions .auth-submit {
+  width: auto;
+}
+.v-app-auth .auth-step-review {
+  margin-bottom: 4px;
+}
+.v-app-auth .auth-review-group {
+  margin: 0 0 15px;
+  padding: 0 0 13px;
+  border-bottom: 1px solid #dce6f2;
+}
+.v-app-auth .auth-review-group:last-child {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+.v-app-auth .auth-review-group h3 {
+  margin: 0 0 8px;
+  color: var(--v-royal);
+  font-size: 14px;
+}
+.v-app-auth .auth-review-group dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+  margin: 0;
+}
+.v-app-auth .auth-review-group dl > div {
+  min-width: 0;
+}
+.v-app-auth .auth-review-group dt {
+  margin-bottom: 2px;
+  color: #60748f;
+  font-size: 12px;
+}
+.v-app-auth .auth-review-group dd {
+  margin: 0;
+  color: var(--v-navy);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
 .v-app-auth .auth-form .field {
   gap: 8px;
   margin-bottom: 18px;
@@ -4580,5 +4767,25 @@ dialog.v-clinic-location-dialog::backdrop {
   .v-app-auth .auth-card-clinic .field-row,
   .v-app-auth .auth-card-clinic .clinic-address-locality {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 479px) {
+  .v-app-auth .auth-step-list {
+    gap: 4px;
+  }
+  .v-app-auth .auth-step-list li {
+    justify-content: center;
+  }
+  .v-app-auth .auth-step-label {
+    display: none;
+  }
+  .v-app-auth .auth-review-group dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .v-app-auth .auth-step-actions {
+    gap: 8px;
+  }
+  .v-app-auth .auth-step-actions [data-step-back] {
+    flex-basis: 31%;
   }
 }

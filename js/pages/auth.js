@@ -4,7 +4,7 @@
 import { APP, DEFAULT_HOURS, isSupabaseEnabled } from "../config.js";
 import { db } from "../lib/db.js";
 import { applyErrors, validarCNPJ, validarCPF, validarEmail, validarNome, validarSenha, validarTelefone, validarCEP } from "../lib/validators.js";
-import { bindMasks, bindPhotoUpload, bindSubmit, bot, field, groupForm, photoUpload, toast } from "../lib/ui.js";
+import { bindMasks, bindMultiStepForm, bindPhotoUpload, bindSubmit, bot, field, multiStepProgress, photoUpload, toast } from "../lib/ui.js";
 import { escapeHtml } from "../lib/utils.js";
 
 const manualSignupPrefillKey = "vezz.signup.prefill.v1";
@@ -156,6 +156,7 @@ export function renderRegisterPatient(root, { session, query = {} }) {
     location.hash = "#/login?oauth_error=expired";
     return;
   }
+  const patientSteps = ["Dados pessoais", "Acesso"];
   root.innerHTML = authLayout(
     `<div class="auth-heading">
        <p class="auth-eyebrow">Cadastro de paciente</p>
@@ -163,15 +164,29 @@ export function renderRegisterPatient(root, { session, query = {} }) {
        <p>${pendingGoogle ? "Seu acesso Google foi confirmado. Confira o nome e o e-mail e preencha os dados que faltam para criar seu perfil VEZZ." : "Cadastre-se para agendar consultas e acompanhar sua vez na fila."}</p>
      </div>
      ${pendingGoogle && query.oauth_error === "profile" ? `<p class="auth-message" role="status">Seu e-mail foi confirmado pelo Google e j\u00e1 est\u00e1 preenchido. Complete os dados abaixo para continuar.</p>` : ""}
-     <form id="reg">
-       ${authField({ name: "nome", label: "Nome completo", placeholder: "Ana Clara Silva", value: pendingGoogle?.nome || manualPrefill?.nome || "", required: true, autocomplete: "name" })}
-       <div class="field-row">
-         ${authField({ name: "cpf", label: "CPF", placeholder: "000.000.000-00", required: true })}
-         ${authField({ name: "telefone", label: "Telefone", placeholder: "(85) 98888-0000", required: true })}
+     <form id="reg" class="auth-multistep" novalidate>
+       ${multiStepProgress(patientSteps, "Etapas do cadastro")}
+       <fieldset class="auth-step-panel" data-step-panel aria-labelledby="patient-step-personal-title">
+         <legend class="sr-only">Dados pessoais</legend>
+         <h2 id="patient-step-personal-title" class="auth-step-title" data-step-title tabindex="-1">Seus dados pessoais</h2>
+         <p class="auth-step-description">Esses dados ajudam a identificar seu cadastro e acompanhar suas consultas.</p>
+         ${authField({ name: "nome", label: "Nome completo", placeholder: "Ana Clara Silva", value: pendingGoogle?.nome || manualPrefill?.nome || "", required: true, autocomplete: "name" })}
+         <div class="field-row">
+           ${authField({ name: "cpf", label: "CPF", placeholder: "000.000.000-00", required: true })}
+           ${authField({ name: "telefone", label: "Telefone", placeholder: "(85) 98888-0000", required: true })}
+         </div>
+       </fieldset>
+       <fieldset class="auth-step-panel" data-step-panel aria-labelledby="patient-step-access-title" hidden>
+         <legend class="sr-only">Acesso à conta</legend>
+         <h2 id="patient-step-access-title" class="auth-step-title" data-step-title tabindex="-1">Acesso à conta</h2>
+         <p class="auth-step-description">Use estes dados para entrar no VEZZ.</p>
+         ${pendingGoogle ? `<div class="field auth-field"><div class="auth-field-heading"><label for="email">E-mail</label><span class="auth-verified">Verificado pelo Google</span></div><div class="auth-input-control"><span class="auth-field-icon">${authIcons.email}</span><input id="email" name="email" type="email" value="${escapeHtml(pendingGoogle.email)}" autocomplete="email" readonly required></div><div class="field-error" data-error-for="email" hidden></div></div><p class="auth-step-note">Você continuará entrando com o Google. Sua senha não é compartilhada com o VEZZ.</p>` : `${authField({ name: "email", label: "E-mail", type: "email", value: manualPrefill?.email || "", placeholder: "voce@email.com", required: true, autocomplete: "email" })}${authField({ name: "senha", label: "Senha", type: "password", placeholder: "Crie uma senha", hint: "Use pelo menos 6 caracteres.", required: true, autocomplete: "new-password" })}`}
+       </fieldset>
+       <div class="auth-step-actions">
+         <button class="btn btn-ghost" type="button" data-step-back hidden>Voltar</button>
+         <button class="btn btn-lg auth-step-next" type="button" data-step-next>Continuar</button>
+         <button class="btn btn-lg auth-submit auth-step-submit" type="submit" data-step-submit hidden>${pendingGoogle ? "Concluir cadastro" : "Criar conta"}</button>
        </div>
-       ${pendingGoogle ? `<div class="field auth-field"><div class="auth-field-heading"><label for="email">E-mail</label><span class="auth-verified">Verificado pelo Google</span></div><div class="auth-input-control"><span class="auth-field-icon">${authIcons.email}</span><input id="email" name="email" type="email" value="${escapeHtml(pendingGoogle.email)}" autocomplete="email" readonly required></div><div class="field-error" data-error-for="email" hidden></div></div>` : authField({ name: "email", label: "E-mail", type: "email", value: manualPrefill?.email || "", placeholder: "voce@email.com", required: true, autocomplete: "email" })}
-       ${pendingGoogle ? "" : authField({ name: "senha", label: "Senha", type: "password", placeholder: "Crie uma senha", hint: "Use pelo menos 6 caracteres.", required: true, autocomplete: "new-password" })}
-       <button class="btn btn-lg btn-block auth-submit" type="submit">${pendingGoogle ? "Concluir cadastro" : "Criar conta"}</button>
        ${pendingGoogle ? `<p class="auth-switch">Já tem conta VEZZ? <a href="#/login">Entrar</a></p>` : `<p class="auth-switch">Já tem conta? <a href="#/login">Entrar</a></p>`}
        <p class="auth-support">Para cadastrar uma clínica, <a href="#/solicitar-clinica">envie uma solicitação</a>.</p>
      </form>
@@ -180,6 +195,22 @@ export function renderRegisterPatient(root, { session, query = {} }) {
     "auth-card-register",
   );
   const form = root.querySelector("#reg");
+  const stepper = bindMultiStepForm(form, {
+    steps: patientSteps,
+    validateStep(step) {
+      const data = Object.fromEntries(new FormData(form));
+      const errors = {};
+      if (step === 0) {
+        if (!validarNome(data.nome)) errors.nome = "Informe nome e sobrenome.";
+        if (!validarCPF(data.cpf)) errors.cpf = "CPF inválido.";
+        if (!validarTelefone(data.telefone)) errors.telefone = "Telefone inválido.";
+      } else {
+        if (!validarEmail(data.email)) errors.email = "E-mail inválido.";
+        if (!pendingGoogle && !validarSenha(data.senha)) errors.senha = "A senha precisa ter ao menos 6 caracteres.";
+      }
+      return errors;
+    },
+  });
   root.querySelector("#google-manual-signup")?.addEventListener("click", async (event) => {
     event.preventDefault();
     const link = event.currentTarget;
@@ -199,7 +230,6 @@ export function renderRegisterPatient(root, { session, query = {} }) {
       link.textContent = "Usar e-mail e senha";
     }
   });
-  groupForm(form, [["Seus dados", ["nome", "cpf", "telefone"]], ["Acesso à conta", ["email", "senha"]]]);
   bindPasswordToggles(form);
   bindMasks(form);
   bindSubmit(form, async (e) => {
@@ -211,7 +241,10 @@ export function renderRegisterPatient(root, { session, query = {} }) {
     if (!validarTelefone(data.telefone)) errors.telefone = "Telefone inválido.";
     if (!validarEmail(data.email)) errors.email = "E-mail inválido.";
     if (!pendingGoogle && !validarSenha(data.senha)) errors.senha = "A senha precisa ter ao menos 6 caracteres.";
-    if (!applyErrors(form, errors)) return;
+    if (!applyErrors(form, errors)) {
+      stepper.revealField(Object.keys(errors)[0]);
+      return;
+    }
     try {
       await db().signUpPatient({ ...data, google: !!pendingGoogle });
       toast("Conta criada. Bem-vindo ao VEZZ.", "ok");

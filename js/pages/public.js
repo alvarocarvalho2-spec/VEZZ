@@ -7,6 +7,7 @@ import {
   addressLine,
   avatar,
   bindMasks,
+  bindMultiStepForm,
   bindSubmit,
   bindSlotPicker,
   bot,
@@ -15,8 +16,8 @@ import {
   field,
   footer,
   header,
+  multiStepProgress,
   toast,
-  groupForm,
 } from "../lib/ui.js";
 import {
   escapeHtml,
@@ -277,41 +278,124 @@ export function renderClinicRequest(root, { session }) {
     location.hash = "#/admin-vezz";
     return;
   }
+  const clinicRequestSteps = ["Dados da clínica", "Responsável", "Endereço", "Revisão"];
   root.innerHTML = authLayout(
     `<div class="auth-heading">
        <p class="auth-eyebrow">Para clínicas</p>
        <h1 id="auth-title">Solicite o cadastro da clínica</h1>
-       <p>Envie os dados da clínica e de uma pessoa responsável. A equipe VEZZ avalia a solicitação e retorna com os próximos passos.</p>
+       <p>Preencha em etapas e confira as informações antes de enviar. A equipe VEZZ avaliará a solicitação e retornará com os próximos passos.</p>
      </div>
-     <form id="clinic-request">
-       ${field({ name: "nome_clinica", label: "Nome da clínica", required: true })}
-       ${field({ name: "cnpj", label: "CNPJ", required: true })}
-       ${field({ name: "responsavel", label: "Nome do responsável", required: true })}
-       ${field({ name: "email_responsavel", label: "E-mail do responsável", type: "email", required: true })}
-       ${field({ name: "telefone_responsavel", label: "Telefone do responsável", required: true })}
-       ${field({ name: "telefone_clinica", label: "Telefone da clínica", required: true })}
-       ${field({ name: "especialidades", label: "Especialidades", placeholder: "Cardiologia, Clínica Geral", required: true })}
-       <div class="field-row clinic-address-numbers">${field({ name: "rua", label: "Rua", required: true })}${field({ name: "numero", label: "Número", required: true })}</div>
-       <div class="field-row clinic-address-locality">${field({ name: "bairro", label: "Bairro", required: true })}${field({ name: "cidade", label: "Cidade", required: true })}</div>
-       ${field({ name: "cep", label: "CEP", required: true })}
-       ${field({ name: "descricao", label: "Sobre a clínica", type: "textarea" })}
-       <button class="btn btn-block auth-submit" type="submit">Enviar solicitação</button>
+     <form id="clinic-request" class="auth-multistep" novalidate>
+       ${multiStepProgress(clinicRequestSteps, "Etapas da solicitação")}
+       <fieldset class="auth-step-panel" data-step-panel aria-labelledby="clinic-request-step-clinic-title">
+         <legend class="sr-only">Dados da clínica</legend>
+         <h2 id="clinic-request-step-clinic-title" class="auth-step-title" data-step-title tabindex="-1">Dados da clínica</h2>
+         <p class="auth-step-description">Conte um pouco sobre o estabelecimento que deseja incluir no VEZZ.</p>
+         ${field({ name: "nome_clinica", label: "Nome da clínica", required: true, autocomplete: "organization" })}
+         <div class="field-row">
+           ${field({ name: "cnpj", label: "CNPJ", placeholder: "00.000.000/0000-00", required: true })}
+           ${field({ name: "telefone_clinica", label: "Telefone da clínica", placeholder: "(85) 98888-0000", required: true })}
+         </div>
+         ${field({ name: "especialidades", label: "Especialidades", placeholder: "Cardiologia, Clínica Geral", required: true })}
+         ${field({ name: "descricao", label: "Sobre a clínica", type: "textarea", placeholder: "Conte brevemente sobre os atendimentos oferecidos." })}
+       </fieldset>
+       <fieldset class="auth-step-panel" data-step-panel aria-labelledby="clinic-request-step-contact-title" hidden>
+         <legend class="sr-only">Responsável pelo cadastro</legend>
+         <h2 id="clinic-request-step-contact-title" class="auth-step-title" data-step-title tabindex="-1">Responsável pelo cadastro</h2>
+         <p class="auth-step-description">Informe quem poderá conversar com a equipe VEZZ sobre esta solicitação.</p>
+         ${field({ name: "responsavel", label: "Nome completo", placeholder: "Ana Clara Silva", required: true, autocomplete: "name" })}
+         ${field({ name: "email_responsavel", label: "E-mail", type: "email", placeholder: "voce@clinica.com.br", required: true, autocomplete: "email" })}
+         ${field({ name: "telefone_responsavel", label: "Telefone", placeholder: "(85) 98888-0000", required: true, autocomplete: "tel" })}
+       </fieldset>
+       <fieldset class="auth-step-panel" data-step-panel aria-labelledby="clinic-request-step-address-title" hidden>
+         <legend class="sr-only">Endereço da clínica</legend>
+         <h2 id="clinic-request-step-address-title" class="auth-step-title" data-step-title tabindex="-1">Endereço da clínica</h2>
+         <p class="auth-step-description">Use o endereço onde os pacientes serão atendidos.</p>
+         ${field({ name: "rua", label: "Rua", required: true, autocomplete: "address-line1" })}
+         <div class="field-row clinic-address-numbers">
+           ${field({ name: "numero", label: "Número", required: true })}
+           ${field({ name: "bairro", label: "Bairro", required: true })}
+         </div>
+         <div class="field-row clinic-address-locality">
+           ${field({ name: "cidade", label: "Cidade", required: true, autocomplete: "address-level2" })}
+           ${field({ name: "cep", label: "CEP", placeholder: "00000-000", required: true, autocomplete: "postal-code" })}
+         </div>
+       </fieldset>
+       <section class="auth-step-panel auth-step-review" data-step-panel aria-labelledby="clinic-request-step-review-title" hidden>
+         <h2 id="clinic-request-step-review-title" class="auth-step-title" data-step-title tabindex="-1">Revise a solicitação</h2>
+         <p class="auth-step-description">Confira os dados. Se algo precisar de ajuste, volte à etapa correspondente.</p>
+         <div id="clinic-request-review" class="auth-review" aria-live="polite"></div>
+       </section>
+       <div class="auth-step-actions">
+         <button class="btn btn-ghost" type="button" data-step-back hidden>Voltar</button>
+         <button class="btn btn-lg auth-step-next" type="button" data-step-next>Continuar</button>
+         <button class="btn btn-lg auth-submit auth-step-submit" type="submit" data-step-submit hidden>Enviar solicitação</button>
+       </div>
      </form>
      <p class="auth-switch">Já tem acesso ao VEZZ? <a href="#/login">Entrar</a></p>`,
     "calm",
     "auth-card-clinic",
   );
-  groupForm(root.querySelector("#clinic-request"), [["A clínica", ["nome_clinica", "cnpj", "telefone_clinica", "especialidades", "descricao"]], ["Responsável pelo cadastro", ["responsavel", "email_responsavel", "telefone_responsavel"]], ["Endereço", ["rua", "numero", "bairro", "cidade", "cep"]]]);
-  const form=root.querySelector("#clinic-request");
+  const form = root.querySelector("#clinic-request");
+  const review = root.querySelector("#clinic-request-review");
+  const reviewGroups = [
+    ["Clínica", [["Nome", "nome_clinica"], ["CNPJ", "cnpj"], ["Telefone", "telefone_clinica"], ["Especialidades", "especialidades"], ["Sobre", "descricao"]]],
+    ["Responsável", [["Nome", "responsavel"], ["E-mail", "email_responsavel"], ["Telefone", "telefone_responsavel"]]],
+    ["Endereço", [["Rua", "rua"], ["Número", "numero"], ["Bairro", "bairro"], ["Cidade", "cidade"], ["CEP", "cep"]]],
+  ];
+  const renderReview = () => {
+    review.innerHTML = reviewGroups.map(([title, fields]) => `
+      <section class="auth-review-group" aria-label="${escapeHtml(title)}">
+        <h3>${escapeHtml(title)}</h3>
+        <dl>${fields.map(([label, name]) => {
+          const value = form.elements.namedItem(name)?.value?.trim() || "Não informado";
+          return `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+        }).join("")}</dl>
+      </section>`).join("");
+  };
+  const stepper = bindMultiStepForm(form, {
+    steps: clinicRequestSteps,
+    validateStep(step) {
+      const data = Object.fromEntries(new FormData(form));
+      const errors = {};
+      if (step === 0) {
+        if (String(data.nome_clinica || "").trim().length < 3) errors.nome_clinica = "Informe o nome da clínica.";
+        if (!validarCNPJ(data.cnpj)) errors.cnpj = "CNPJ inválido.";
+        if (!validarTelefone(data.telefone_clinica)) errors.telefone_clinica = "Telefone inválido.";
+        if (!String(data.especialidades || "").trim()) errors.especialidades = "Informe ao menos uma especialidade.";
+      } else if (step === 1) {
+        if (!validarNome(data.responsavel)) errors.responsavel = "Informe nome e sobrenome.";
+        if (!validarEmail(data.email_responsavel)) errors.email_responsavel = "E-mail inválido.";
+        if (!validarTelefone(data.telefone_responsavel)) errors.telefone_responsavel = "Telefone inválido.";
+      } else if (step === 2) {
+        if (!String(data.rua || "").trim()) errors.rua = "Informe a rua.";
+        if (!String(data.numero || "").trim()) errors.numero = "Informe o número.";
+        if (!String(data.bairro || "").trim()) errors.bairro = "Informe o bairro.";
+        if (!String(data.cidade || "").trim()) errors.cidade = "Informe a cidade.";
+        if (!validarCEP(data.cep)) errors.cep = "CEP inválido.";
+      }
+      return errors;
+    },
+    onStepChange(step) {
+      if (step === clinicRequestSteps.length - 1) renderReview();
+    },
+  });
   bindMasks(form);
   bindSubmit(form, async () => {
     const data=Object.fromEntries(new FormData(form)), errors={};
+    if(String(data.nome_clinica || "").trim().length < 3)errors.nome_clinica="Informe o nome da clínica.";
     if(!validarCNPJ(data.cnpj))errors.cnpj="CNPJ inválido.";
+    if(!validarTelefone(data.telefone_clinica))errors.telefone_clinica="Telefone inválido.";
+    if(!String(data.especialidades || "").trim())errors.especialidades="Informe ao menos uma especialidade.";
     if(!validarNome(data.responsavel))errors.responsavel="Informe nome e sobrenome.";
     if(!validarEmail(data.email_responsavel))errors.email_responsavel="E-mail inválido.";
-    for(const name of ["telefone_clinica","telefone_responsavel"])if(!validarTelefone(data[name]))errors[name]="Telefone inválido.";
+    if(!validarTelefone(data.telefone_responsavel))errors.telefone_responsavel="Telefone inválido.";
+    for (const name of ["rua", "numero", "bairro", "cidade"]) if (!String(data[name] || "").trim()) errors[name] = "Preencha este campo.";
     if(!validarCEP(data.cep))errors.cep="CEP inválido.";
-    if(!applyErrors(form,errors))return;
+    if(!applyErrors(form,errors)) {
+      stepper.revealField(Object.keys(errors)[0]);
+      return;
+    }
     try { await db().createClinicRequest(data); toast("Solicitação enviada. A equipe VEZZ entrará em contato.", "ok"); location.hash = "#/"; }
     catch (err) { toast(err.message, "danger"); }
   });
