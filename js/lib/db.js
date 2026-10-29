@@ -724,7 +724,10 @@ export class SupabaseAdapter {
         return createClient(this.url, this.key, {
           auth: {
             autoRefreshToken: false,
-            detectSessionInUrl: true,
+            // The callback exchanges the PKCE code explicitly below. Avoid a
+            // second, automatic exchange whose session storage is intentionally
+            // isolated from the VEZZ session adapter.
+            detectSessionInUrl: false,
             flowType: "pkce",
             persistSession: true,
             storage,
@@ -797,14 +800,15 @@ export class SupabaseAdapter {
       this.setOAuthRoute("#/login?oauth_error=google");
       return true;
     }
-    if (!callbackParams.has("code")) return false;
+    const code = callbackParams.get("code");
+    if (!code) return false;
 
     sessionStorage.removeItem(APP.oauthRedirectKey);
 
     let oauthSession = null;
     try {
       const authClient = await this.googleOAuthClient();
-      const { data, error } = await authClient.auth.getSession();
+      const { data, error } = await authClient.auth.exchangeCodeForSession(code);
       oauthSession = data?.session || null;
       if (error || !oauthSession?.access_token || !oauthSession?.refresh_token) {
         throw error || new Error("Não foi possível validar o retorno do Google.");
