@@ -29,13 +29,10 @@ export default defineConfig(({ mode }) => {
         closeBundle() {
           mkdirSync("dist/assets", { recursive: true });
           cpSync("assets", "dist/assets", { recursive: true });
-          cpSync("politica-de-privacidade.html", "dist/politica-de-privacidade.html");
-          cpSync("termos-de-servico.html", "dist/termos-de-servico.html");
-          cpSync("legal.css", "dist/legal.css");
         },
       },
     ],
-    publicDir: false,
+    publicDir: "public",
     define: { __VEZZ_LOCAL__: JSON.stringify(local) },
     server: {
       host: "127.0.0.1",
