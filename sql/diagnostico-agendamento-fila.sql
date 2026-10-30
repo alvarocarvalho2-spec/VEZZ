@@ -14,7 +14,7 @@
 --   D7  O índice único já existe?
 --   E   Resumo geral das tabelas.
 --
--- Privacidade: só identificadores (uuids), datas e status — sem nome, CPF,
+-- Privacidade: só identificadores (uuids), datas e status — sem nome,
 -- telefone ou e-mail de pacientes.
 -- =============================================================================
 

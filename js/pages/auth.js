@@ -3,7 +3,7 @@
  */
 import { APP, DEFAULT_HOURS, isSupabaseEnabled } from "../config.js";
 import { db } from "../lib/db.js";
-import { applyErrors, validarCNPJ, validarCPF, validarEmail, validarNome, validarSenha, validarTelefone, validarCEP } from "../lib/validators.js";
+import { applyErrors, validarCNPJ, validarEmail, validarNome, validarSenha, validarTelefone, validarCEP } from "../lib/validators.js";
 import { bindMasks, bindMultiStepForm, bindPhotoUpload, bindSubmit, bot, field, modal, multiStepProgress, photoUpload, toast } from "../lib/ui.js";
 import { escapeHtml } from "../lib/utils.js";
 
@@ -169,10 +169,7 @@ export function renderRegisterPatient(root, { session, query = {} }) {
          <h2 id="patient-step-personal-title" class="auth-step-title" data-step-title tabindex="-1">Seus dados pessoais</h2>
          <p class="auth-step-description">Esses dados ajudam a identificar seu cadastro e acompanhar suas consultas.</p>
          ${authField({ name: "nome", label: "Nome completo", placeholder: "Ana Clara Silva", value: pendingGoogle?.nome || manualPrefill?.nome || "", required: true, autocomplete: "name" })}
-         <div class="field-row">
-           ${authField({ name: "cpf", label: "CPF", placeholder: "000.000.000-00", required: true })}
-           ${authField({ name: "telefone", label: "Telefone", placeholder: "(85) 98888-0000", required: true })}
-         </div>
+         ${authField({ name: "telefone", label: "Telefone", placeholder: "(85) 98888-0000", required: true })}
        </fieldset>
        <fieldset class="auth-step-panel" data-step-panel aria-labelledby="patient-step-access-title" hidden>
          <legend class="sr-only">Acesso à conta</legend>
@@ -228,7 +225,6 @@ export function renderRegisterPatient(root, { session, query = {} }) {
       const errors = {};
       if (step === 0) {
         if (!validarNome(data.nome)) errors.nome = "Informe nome e sobrenome.";
-        if (!validarCPF(data.cpf)) errors.cpf = "CPF inválido.";
         if (!validarTelefone(data.telefone)) errors.telefone = "Telefone inválido.";
       } else {
         if (!validarEmail(data.email)) errors.email = "E-mail inválido.";
@@ -263,7 +259,6 @@ export function renderRegisterPatient(root, { session, query = {} }) {
     const data = Object.fromEntries(new FormData(form));
     const errors = {};
     if (!validarNome(data.nome)) errors.nome = "Informe nome e sobrenome.";
-    if (!validarCPF(data.cpf)) errors.cpf = "CPF inválido.";
     if (!validarTelefone(data.telefone)) errors.telefone = "Telefone inválido.";
     if (!validarEmail(data.email)) errors.email = "E-mail inválido.";
     if (!pendingGoogle && !validarSenha(data.senha)) errors.senha = "A senha precisa ter ao menos 6 caracteres.";

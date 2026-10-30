@@ -4,7 +4,6 @@ import { createHandler } from '../supabase/functions/register-patient/handler.ts
 
 const valid = {
   nome: 'Maria Silva',
-  cpf: '529.982.247-25',
   email: 'maria@example.test',
   telefone: '(85) 98888-7777',
   senha: 'Senha123',
@@ -33,7 +32,6 @@ function fixture(options = {}) {
         maybeSingle: async () => {
           if (table === 'gestor' && options.existingManager) return { data: { id_gestor: 'manager' }, error: null };
           if (table !== 'paciente') return { data: null, error: null };
-          if (filter.column === 'cpf' && options.existingCpf) return { data: { id_paciente: 'existing' }, error: null };
           if (filter.column === 'email' && options.existingEmail) return { data: { id_paciente: 'existing' }, error: null };
           return { data: null, error: null };
         },
@@ -76,20 +74,18 @@ function fixture(options = {}) {
   };
 }
 
-test('invalid CPF is rejected before Auth signup', async () => {
+test('invalid email is rejected before Auth signup', async () => {
   const { handler, state } = fixture();
-  const response = await handler(request({ ...valid, cpf: '111.111.111-11' }));
+  const response = await handler(request({ ...valid, email: 'not-an-email' }));
   assert.equal(response.status, 400);
   assert.equal(state.clientsCreated, 0);
   assert.equal(state.authCalls, 0);
 });
 
-test('existing CPF or email is detected before creating Auth', async () => {
-  for (const options of [{ existingCpf: true }, { existingEmail: true }]) {
-    const { handler, state } = fixture(options);
-    assert.equal((await handler(request())).status, 409);
-    assert.equal(state.authCalls, 0);
-  }
+test('existing email is detected before creating Auth', async () => {
+  const { handler, state } = fixture({ existingEmail: true });
+  assert.equal((await handler(request())).status, 409);
+  assert.equal(state.authCalls, 0);
 });
 
 test('manager email is not accepted for patient registration', async () => {
@@ -111,7 +107,7 @@ test('successful signup returns Auth tokens and the created patient profile', as
 
 test('Google signup verifies the identity and completes the patient profile without a password', async () => {
   const { handler, state } = fixture({ googleUser: true });
-  const googleBody = { nome: valid.nome, cpf: valid.cpf, email: valid.email, telefone: valid.telefone, google: true };
+  const googleBody = { nome: valid.nome, email: valid.email, telefone: valid.telefone, google: true };
   const response = await handler(request(googleBody, 'POST', { authorization: 'Bearer google-access' }));
   const result = await response.json();
   assert.equal(response.status, 200);
@@ -124,7 +120,7 @@ test('Google signup verifies the identity and completes the patient profile with
 });
 
 test('Google patient completion rejects missing tokens and unverified or mismatched identities', async () => {
-  const body = { nome: valid.nome, cpf: valid.cpf, email: valid.email, telefone: valid.telefone, google: true };
+  const body = { nome: valid.nome, email: valid.email, telefone: valid.telefone, google: true };
   const missing = fixture({ googleUser: true });
   assert.equal((await missing.handler(request(body))).status, 401);
   assert.equal(missing.state.authCalls, 0);

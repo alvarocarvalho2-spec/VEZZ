@@ -317,13 +317,12 @@ export async function renderPatients(root, { session }) {
         ${
           people.length
             ? `<div class="table-wrap"><table class="data">
-                <thead><tr><th></th><th>Nome</th><th>CPF</th><th>Contato</th><th>Consultas</th></tr></thead>
+                <thead><tr><th></th><th>Nome</th><th>Contato</th><th>Consultas</th></tr></thead>
                 <tbody>${people
                   .map(
                     (p) => `<tr>
                       <td>${avatar(p.nome)}</td>
                       <td>${escapeHtml(p.nome)}</td>
-                      <td>${escapeHtml(p.cpf)}</td>
                       <td>${escapeHtml(p.email)}<br><span class="muted">${escapeHtml(p.telefone || "")}</span></td>
                       <td>${p.total_consultas}</td>
                     </tr>`

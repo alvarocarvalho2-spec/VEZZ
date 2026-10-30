@@ -263,7 +263,7 @@ export function renderHow(root, { session }) {
           <img src="assets/images/feature-queue.jpg" alt="Painel digital de fila" style="width:100%;height:280px;object-fit:cover">
         </div>
         <h2><span class="q-bot">${bot("calm", "bot-glow")}</span>Para o paciente</h2>
-        <p>Cadastre-se com nome, CPF, telefone e e-mail. Pesquise clínicas por nome ou bairro. Agende. No dia, abra <em>Minha fila</em> e acompanhe a posição — atualizada automaticamente a cada poucos segundos.</p>
+        <p>Cadastre-se com nome, telefone e e-mail. Pesquise clínicas por nome ou bairro. Agende. No dia, abra <em>Minha fila</em> e acompanhe a posição — atualizada automaticamente a cada poucos segundos.</p>
         <h2><span class="q-bot">${bot("cool", "bot-glow")}</span>Para o gestor</h2>
         <p>O painel do dia mostra quem espera, quem está no consultório e quem é o próximo. Iniciar, finalizar e chamar o próximo reorganizam a fila para todos os pacientes conectados.</p>
         <p><a class="btn" href="#/clinicas">Começar pela pesquisa</a></p>

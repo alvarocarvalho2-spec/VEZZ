@@ -130,9 +130,9 @@ export class LocalAdapter {
 
   findUserByEmail(email) {
     const e = String(email || "").trim().toLowerCase();
-    const paciente = this.db.pacientes.find((p) => p.email.toLowerCase() === e);
+    const paciente = this.db.pacientes.find((p) => String(p.email || "").trim().toLowerCase() === e);
     if (paciente) return { role: "paciente", record: paciente };
-    const gestor = this.db.gestores.find((g) => g.email.toLowerCase() === e);
+    const gestor = this.db.gestores.find((g) => String(g.email || "").trim().toLowerCase() === e);
     if (gestor) return { role: "gestor", record: gestor };
     return null;
   }
@@ -141,14 +141,10 @@ export class LocalAdapter {
     if (this.findUserByEmail(data.email)) {
       throw new Error("Já existe uma conta com este e-mail.");
     }
-    if (this.db.pacientes.some((p) => onlyDigits(p.cpf) === onlyDigits(data.cpf))) {
-      throw new Error("Já existe um paciente com este CPF.");
-    }
     const salt = this.db.meta.salt || "vezz.local.v1";
     const paciente = {
       id_paciente: uid("pac"),
       nome: data.nome.trim(),
-      cpf: data.cpf,
       email: data.email.trim().toLowerCase(),
       telefone: data.telefone,
       senha: await hashPassword(data.senha, salt),
@@ -1088,7 +1084,6 @@ export class SupabaseAdapter {
       headers: { apikey: this.key, "Content-Type": "application/json" },
       body: JSON.stringify({
         nome: data.nome,
-        cpf: data.cpf,
         email: data.email,
         telefone: data.telefone,
         ...(googleOnboarding ? { google: true } : { senha: data.senha }),
@@ -1373,7 +1368,7 @@ export class SupabaseAdapter {
       totals.set(consulta.id_paciente, (totals.get(consulta.id_paciente) || 0) + 1);
     }
     const pacientes=[];
-    for(let offset=0;offset<ids.length;offset+=200) pacientes.push(...await this.restAll("paciente", { id_paciente: `in.(${ids.slice(offset,offset+200).join(",")})`, select: "id_paciente,nome,cpf,email,telefone,foto", order: "id_paciente.asc" }));
+    for(let offset=0;offset<ids.length;offset+=200) pacientes.push(...await this.restAll("paciente", { id_paciente: `in.(${ids.slice(offset,offset+200).join(",")})`, select: "id_paciente,nome,email,telefone,foto", order: "id_paciente.asc" }));
     return pacientes.map((paciente) => ({ ...paciente, total_consultas: totals.get(paciente.id_paciente) }));
   }
 

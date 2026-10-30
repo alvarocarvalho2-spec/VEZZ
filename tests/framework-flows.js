@@ -282,31 +282,24 @@ async (page) => {
       await page.locator("#reg").evaluate((form) => {
         form.noValidate = true;
         form.elements.nome.value = "A";
-        form.elements.cpf.value = "11111111111";
         form.elements.telefone.value = "123";
         form.elements.email.value = "invalid";
         form.elements.senha.value = "1";
         form.requestSubmit();
       });
-      await page.locator("#cpf[aria-invalid=true]").waitFor();
+      await page.locator('#reg [name="telefone"][aria-invalid=true]').waitFor();
       assert(
-        await page.locator("#cpf").getAttribute("aria-describedby"),
+        await page.locator('#reg [name="telefone"]').getAttribute("aria-describedby"),
         "Validation association missing",
       );
     },
   );
   await check("registration, recovery and relogin work", async () => {
-    const cpf = await page.evaluate(async () =>
-      (await import("/js/lib/validators.js")).gerarCPF(),
-    );
-    for (const [name, value] of Object.entries({
-      nome: "Paciente Framework",
-      cpf,
-      telefone: "85988887777",
-      email: "framework@example.test",
-      senha: "Framework123",
-    }))
-      await page.locator(`#reg [name=${name}]`).fill(value);
+    await page.locator('#reg [name="nome"]').fill("Paciente Framework");
+    await page.locator('#reg [name="telefone"]').fill("85988887777");
+    await page.locator("#reg [data-step-next]").click();
+    await page.locator('#reg [name="email"]').fill("framework@example.test");
+    await page.locator('#reg [name="senha"]').fill("Framework123");
     await page.locator("#reg button[type=submit]").click();
     await page.waitForURL("**/#/paciente");
     await page.getByRole("button", { name: "Sair", exact: true }).click();

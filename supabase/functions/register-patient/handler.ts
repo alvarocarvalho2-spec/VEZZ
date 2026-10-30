@@ -11,26 +11,6 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 const digits = (value: unknown) => String(value || "").replace(/\D/g, "");
 
-function validarCPF(value: unknown) {
-  const cpf = digits(value);
-  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
-  let sum = 0;
-  for (let i = 0; i < 9; i++) sum += Number(cpf[i]) * (10 - i);
-  let digit = 11 - (sum % 11);
-  if (digit >= 10) digit = 0;
-  if (digit !== Number(cpf[9])) return false;
-  sum = 0;
-  for (let i = 0; i < 10; i++) sum += Number(cpf[i]) * (11 - i);
-  digit = 11 - (sum % 11);
-  if (digit >= 10) digit = 0;
-  return digit === Number(cpf[10]);
-}
-
-function formatCPF(value: string) {
-  const cpf = digits(value);
-  return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`;
-}
-
 function validationError(body: any) {
   const nome = typeof body?.nome === "string" ? body.nome.trim() : "";
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
@@ -38,7 +18,6 @@ function validationError(body: any) {
   const google = body?.google === true;
   const telefone = digits(body?.telefone);
   if (nome.length < 3 || nome.length > 160 || !/\S+\s+\S+/.test(nome)) return "Informe nome e sobrenome.";
-  if (typeof body?.cpf !== "string" || digits(body.cpf).length !== 11 || !validarCPF(body.cpf)) return "CPF inv\u00e1lido.";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) return "Informe um e-mail v\u00e1lido.";
   if (typeof body?.telefone !== "string" || (telefone.length !== 10 && telefone.length !== 11)) return "Informe um telefone v\u00e1lido.";
   if (!google && (senha.length < 6 || senha.length > 128)) return "A senha precisa ter de 6 a 128 caracteres.";
@@ -74,7 +53,6 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
 
     const nome = body.nome.trim();
     const email = body.email.trim().toLowerCase();
-    const cpf = formatCPF(body.cpf);
     const telefone = body.telefone.trim();
     const senha = body.senha;
     let clients: { admin: any; publicClient: any };
@@ -96,15 +74,14 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
           return json({ error: "Não foi possível validar a conta Google. Entre novamente e tente outra vez." }, 401);
         }
       }
-      const [cpfLookup, emailLookup, managerLookup, googleProfileLookup] = await Promise.all([
-        clients.admin.from("paciente").select("id_paciente").eq("cpf", cpf).maybeSingle(),
+      const [emailLookup, managerLookup, googleProfileLookup] = await Promise.all([
         clients.admin.from("paciente").select("id_paciente").eq("email", email).maybeSingle(),
         clients.admin.from("gestor").select("id_gestor").eq("email", email).maybeSingle(),
         body.google === true
           ? clients.admin.from("paciente").select("id_paciente,nome,email,foto").eq("auth_id", authenticatedGoogleUser.id).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
       ]);
-      if (cpfLookup.error || emailLookup.error || managerLookup.error || googleProfileLookup.error) throw Error("Account lookup failed");
+      if (emailLookup.error || managerLookup.error || googleProfileLookup.error) throw Error("Account lookup failed");
       if (googleProfileLookup.data) {
         if (googleProfileLookup.data.email?.trim().toLowerCase() !== email) {
           return json({ error: "Esta conta Google já está vinculada a outro cadastro. Entre em contato com o suporte." }, 409);
@@ -113,7 +90,6 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
         // not report the profile created by the previous attempt as a duplicate.
         return json({ patient: googleProfileLookup.data });
       }
-      if (cpfLookup.data) return json({ error: "J\u00e1 existe um cadastro com este CPF. Entre com sua conta ou recupere a senha." }, 409);
       if (emailLookup.data) return json({ error: "J\u00e1 existe uma conta com este e-mail. Entre ou recupere sua senha." }, 409);
       if (managerLookup.data) return json({ error: "Este e-mail j\u00e1 tem acesso de gestor. Entre na sua conta." }, 409);
     } catch {
@@ -125,7 +101,6 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
     const insertProfile = (id: string) => clients.admin.from("paciente").insert({
       auth_id: id,
       nome,
-      cpf,
       email,
       telefone,
       senha: "supabase-auth",
@@ -140,7 +115,7 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
         const inserted = await insertProfile(authenticatedGoogleUser.id);
         if (inserted.error) {
           if (inserted.error.code === "23505") {
-            return json({ error: "Este CPF ou e-mail já está cadastrado. Confira os dados ou entre com sua conta." }, 409);
+            return json({ error: "Este e-mail já está cadastrado. Entre ou recupere sua senha." }, 409);
           }
           return json({ error: "Não foi possível concluir o cadastro. Tente novamente." }, 400);
         }
@@ -163,7 +138,7 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
         const inserted = await insertProfile(login.data.user.id);
         if (inserted.error) {
           if (inserted.error.code === "23505") {
-            return json({ error: "Este CPF ou e-mail j\u00e1 est\u00e1 cadastrado. Confira os dados ou entre com sua conta." }, 409);
+            return json({ error: "Este e-mail j\u00e1 est\u00e1 cadastrado. Entre ou recupere sua senha." }, 409);
           }
           return json({ error: "N\u00e3o foi poss\u00edvel concluir o cadastro. Tente novamente." }, 400);
         }
@@ -214,7 +189,7 @@ export function createHandler(createClients: () => { admin: any; publicClient: a
         authUserId = null;
         if (cleanup?.error) return json({ error: "N\u00e3o foi poss\u00edvel concluir. Entre em contato com a cl\u00ednica para liberar o e-mail." }, 500);
         if (inserted.error.code === "23505") {
-          return json({ error: "Este CPF ou e-mail j\u00e1 est\u00e1 cadastrado. Confira os dados ou entre com sua conta." }, 409);
+          return json({ error: "Este e-mail j\u00e1 est\u00e1 cadastrado. Entre ou recupere sua senha." }, 409);
         }
         return json({ error: "N\u00e3o foi poss\u00edvel concluir o cadastro. Tente novamente." }, 400);
       }

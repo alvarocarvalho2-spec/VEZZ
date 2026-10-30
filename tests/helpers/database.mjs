@@ -31,10 +31,10 @@ export async function database({ migrate = true } = {}) {
     insert into clinica(id_clinica,nome,cnpj,telefone,horarios) values
       ('${ids.clinic}','Clínica Teste A','A','85999999999','{"seg":["08:00-18:00"],"ter":["08:00-18:00"],"qua":["08:00-18:00"],"qui":["08:00-18:00"],"sex":["08:00-18:00"],"sab":["08:00-18:00"],"dom":["08:00-18:00"]}'),
       ('${ids.otherClinic}','Clínica Teste B','B','85999999999','{"seg":["08:00-18:00"]}');
-    insert into paciente(id_paciente,nome,cpf,email,telefone) values
-      ('${ids.patient}','Paciente Teste A','A','patient-a@example.test','85999999999'),
-      ('${ids.otherPatient}','Paciente Teste B','B','patient-b@example.test','85999999999'),
-      ('${ids.thirdPatient}','Paciente Teste C','C','patient-c@example.test','85999999999');
+    insert into paciente(id_paciente,nome,email,telefone) values
+      ('${ids.patient}','Paciente Teste A','patient-a@example.test','85999999999'),
+      ('${ids.otherPatient}','Paciente Teste B','patient-b@example.test','85999999999'),
+      ('${ids.thirdPatient}','Paciente Teste C','patient-c@example.test','85999999999');
     insert into gestor(nome,email,id_clinica,principal) values
       ('Gestor Teste A','manager-a@example.test','${ids.clinic}',true),
       ('Gestor Teste B','manager-b@example.test','${ids.otherClinic}',true),

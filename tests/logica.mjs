@@ -1,5 +1,5 @@
 import { generateTimeSlots, isPastDay, plusDaysISO, todayISO, formatTime } from '../js/lib/utils.js';
-import { validarCPF, validarCNPJ, validarEmail, validarTelefone } from '../js/lib/validators.js';
+import { validarCNPJ, validarEmail, validarTelefone } from '../js/lib/validators.js';
 
 const hours = { seg:['08:00-12:00','14:00-18:00'], sab:['08:00-12:00'], dom:[] };
 let fails = 0;
@@ -35,8 +35,6 @@ const coerente = gh.every((s) => {
 check(`hoje coerente com a hora da clínica (${horaClinica}h: ${passados} passados / ${futuros} livres)`, coerente);
 
 // validações
-check('CPF válido aceito', validarCPF('529.982.247-25'));
-check('CPF inválido rejeitado', !validarCPF('111.111.111-11'));
 check('CNPJ válido aceito', validarCNPJ('11.222.333/0001-81'));
 check('e-mail inválido rejeitado', !validarEmail('a@b'));
 check('telefone curto rejeitado', !validarTelefone('123'));

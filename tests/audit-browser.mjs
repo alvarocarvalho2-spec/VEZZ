@@ -73,12 +73,11 @@ try {
   });
   await check('registration exposes validation to assistive technology',async()=>{
     await page.evaluate(async()=>api.signOut());await route('#/cadastro');
-    await page.locator('#reg').evaluate(form=>{form.noValidate=true;form.elements.nome.value='A';form.elements.cpf.value='11111111111';form.elements.telefone.value='123';form.elements.email.value='invalid';form.elements.senha.value='1';form.requestSubmit();});
-    await page.waitForSelector('#cpf[aria-invalid=true]');assert.ok(await page.locator('#cpf').getAttribute('aria-describedby'));assert.equal(await page.evaluate(()=>document.activeElement.id),'nome');
+    await page.locator('#reg').evaluate(form=>{form.noValidate=true;form.elements.nome.value='A';form.elements.telefone.value='123';form.elements.email.value='invalid';form.elements.senha.value='1';form.requestSubmit();});
+    await page.waitForSelector('#reg [name="telefone"][aria-invalid=true]');assert.ok(await page.locator('#reg [name="telefone"]').getAttribute('aria-describedby'));assert.equal(await page.evaluate(()=>document.activeElement.id),'nome');
   });
   await check('registration, login, recovery and logout work end to end',async()=>{
-    const cpf=await page.evaluate(async()=>(await import('/js/lib/validators.js')).gerarCPF());
-    for(const [name,value] of Object.entries({nome:'Paciente Auditoria',cpf,telefone:'85988887777',email:'audit@example.test',senha:'TestPassword123'}))await page.locator(`#reg [name=${name}]`).fill(value);
+    await page.locator('#reg [name="nome"]').fill('Paciente Auditoria');await page.locator('#reg [name="telefone"]').fill('85988887777');await page.locator('#reg [data-step-next]').click();await page.locator('#reg [name="email"]').fill('audit@example.test');await page.locator('#reg [name="senha"]').fill('TestPassword123');
     await page.locator('#reg button[type=submit]').click();await page.waitForURL('**/#/paciente');
     await page.getByRole('button',{name:'Sair',exact:true}).first().click();await page.waitForURL('**/#/');await route('#/recuperar-senha');
     await page.locator('#rec [name=email]').fill('audit@example.test');await page.locator('#rec button').click();await page.waitForSelector('#newp');

@@ -3,7 +3,6 @@
  * Usados no modo local e como referência visual do produto.
  */
 import { APP, DEFAULT_HOURS } from "../config.js";
-import { gerarCPF } from "./validators.js";
 import { combineDateTime, hashPassword, toLocalInputDate } from "./utils.js";
 
 function plusDays(n, time = "09:00") {
@@ -139,7 +138,6 @@ export async function buildSeed() {
     {
       id_paciente: "pac_ana",
       nome: "Ana Clara Silva",
-      cpf: "045.882.193-10",
       email: "ana.silva@email.com",
       telefone: "(85) 98812-4401",
       senha: pass,
@@ -149,7 +147,6 @@ export async function buildSeed() {
     {
       id_paciente: "pac_carlos",
       nome: "Carlos Eduardo Nogueira",
-      cpf: maskOrKeep(gerarCPF()),
       email: "carlos.nogueira@email.com",
       telefone: "(85) 98701-2290",
       senha: pass,
@@ -159,7 +156,6 @@ export async function buildSeed() {
     {
       id_paciente: "pac_beatriz",
       nome: "Beatriz Lima Rocha",
-      cpf: maskOrKeep(gerarCPF()),
       email: "beatriz.rocha@email.com",
       telefone: "(85) 99934-1182",
       senha: pass,
@@ -169,7 +165,6 @@ export async function buildSeed() {
     {
       id_paciente: "pac_joao",
       nome: "João Pedro Vasconcelos",
-      cpf: maskOrKeep(gerarCPF()),
       email: "joao.vasconcelos@email.com",
       telefone: "(85) 98120-7733",
       senha: pass,
@@ -179,7 +174,6 @@ export async function buildSeed() {
     {
       id_paciente: "pac_fernanda",
       nome: "Fernanda Dias Albuquerque",
-      cpf: maskOrKeep(gerarCPF()),
       email: "fernanda.dias@email.com",
       telefone: "(85) 98654-0091",
       senha: pass,
@@ -189,7 +183,6 @@ export async function buildSeed() {
     {
       id_paciente: "pac_lucas",
       nome: "Lucas Martins Freire",
-      cpf: maskOrKeep(gerarCPF()),
       email: "lucas.freire@email.com",
       telefone: "(85) 99221-4408",
       senha: pass,
@@ -197,9 +190,6 @@ export async function buildSeed() {
       foto: "",
     },
   ];
-
-  // Corrige CPF da Ana com dígitos válidos gerados
-  pacientes[0].cpf = maskOrKeep(gerarCPF());
 
   const consultas = [
     {
@@ -350,9 +340,4 @@ export async function buildSeed() {
     solicitacoes: [],
     convites: [],
   };
-}
-
-function maskOrKeep(digits) {
-  const d = String(digits).replace(/\D/g, "").padStart(11, "0").slice(0, 11);
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }

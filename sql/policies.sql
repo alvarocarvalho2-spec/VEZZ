@@ -84,8 +84,8 @@ create policy "paciente_update_self" on public.paciente for update
 -- Privilégios: idem — revoga UPDATE geral e re-concede só nome/telefone/foto.
 revoke update on public.paciente from authenticated;
 revoke update on public.paciente from anon;
-revoke update (id_paciente, auth_id, nome, cpf, email, telefone, senha, foto, created_at) on public.paciente from authenticated;
-revoke update (id_paciente, auth_id, nome, cpf, email, telefone, senha, foto, created_at) on public.paciente from anon;
+revoke update (id_paciente, auth_id, nome, email, telefone, senha, foto, created_at) on public.paciente from authenticated;
+revoke update (id_paciente, auth_id, nome, email, telefone, senha, foto, created_at) on public.paciente from anon;
 grant update (nome, telefone, foto) on public.paciente to authenticated;
 
 -- Gestores

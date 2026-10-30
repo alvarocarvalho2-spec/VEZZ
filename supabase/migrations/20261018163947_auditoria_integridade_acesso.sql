@@ -42,7 +42,7 @@ revoke insert,update on public.clinica,public.endereco,public.paciente,public.ge
 -- Old column grants survive REVOKE at table level: remove them explicitly.
 revoke update(id_consulta,data_hora,status,id_paciente,id_clinica,especialidade,observacao,ticket,created_at) on public.consulta from anon,authenticated;
 revoke update(id_fila_atendimento,posicao,hora_entrada,hora_inicio,hora_fim,id_consulta) on public.fila_atendimento from anon,authenticated;
-revoke update(id_paciente,auth_id,nome,cpf,email,telefone,senha,foto,created_at) on public.paciente from anon,authenticated;
+revoke update(id_paciente,auth_id,nome,email,telefone,senha,foto,created_at) on public.paciente from anon,authenticated;
 revoke update(id_gestor,auth_id,nome,email,senha,cargo,foto,principal,id_clinica,created_at) on public.gestor from anon,authenticated;
 grant select on public.clinica,public.endereco to anon,authenticated;
 grant select on public.paciente,public.gestor,public.consulta,public.fila_atendimento,public.solicitacao_clinica,public.convite_gestor to authenticated;

@@ -3,7 +3,7 @@
  */
 import { APP } from "../config.js";
 import { bot } from "./bot-sprite.js";
-import { addressLine, compressImageFile, el, escapeHtml, formatDateTime, formatMinutes, initials, maskCEP, maskCNPJ, maskCPF, maskPhone, statusTone, ticketCode } from "./utils.js";
+import { addressLine, compressImageFile, el, escapeHtml, formatDateTime, formatMinutes, initials, maskCEP, maskCNPJ, maskPhone, statusTone, ticketCode } from "./utils.js";
 import { applyErrors } from "./validators.js";
 
 export function bindSubmit(form, handler) {
@@ -576,7 +576,6 @@ export function bindMasks(root) {
         i.value = fn(i.value);
       });
     });
-  apply("cpf", maskCPF);
   apply("cnpj", maskCNPJ);
   apply("telefone", maskPhone);
   apply("telefone_clinica", maskPhone);

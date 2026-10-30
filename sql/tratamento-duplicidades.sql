@@ -22,7 +22,7 @@
 -- -----------------------------------------------------------------------------
 -- RELATÓRIO (somente leitura) — grupos com mais de uma consulta ATIVA no
 -- mesmo (clínica, data_hora), com as consultas envolvidas e suas filas.
--- Só identificadores — sem nome/CPF/telefone.
+-- Só identificadores — sem nome/telefone.
 -- -----------------------------------------------------------------------------
 select c.id_clinica,
        c.data_hora,

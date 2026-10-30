@@ -24,22 +24,6 @@ export function validarCEP(cep) {
   return onlyDigits(cep).length === 8;
 }
 
-/** Valida dígitos verificadores do CPF. */
-export function validarCPF(cpf) {
-  const d = onlyDigits(cpf);
-  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
-  let sum = 0;
-  for (let i = 0; i < 9; i++) sum += Number(d[i]) * (10 - i);
-  let rev = 11 - (sum % 11);
-  if (rev >= 10) rev = 0;
-  if (rev !== Number(d[9])) return false;
-  sum = 0;
-  for (let i = 0; i < 10; i++) sum += Number(d[i]) * (11 - i);
-  rev = 11 - (sum % 11);
-  if (rev >= 10) rev = 0;
-  return rev === Number(d[10]);
-}
-
 /** Valida dígitos verificadores do CNPJ. */
 export function validarCNPJ(cnpj) {
   const d = onlyDigits(cnpj);
@@ -54,19 +38,6 @@ export function validarCNPJ(cnpj) {
   const dv1 = calc(d.slice(0, 12), f1);
   const dv2 = calc(d.slice(0, 12) + dv1, f2);
   return d.endsWith(`${dv1}${dv2}`);
-}
-
-export function gerarCPF() {
-  const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 9));
-  const digit = (arr, start) => {
-    let sum = 0;
-    for (let i = 0; i < arr.length; i++) sum += arr[i] * (start - i);
-    const r = 11 - (sum % 11);
-    return r >= 10 ? 0 : r;
-  };
-  n.push(digit(n, 10));
-  n.push(digit(n, 11));
-  return n.join("");
 }
 
 /**
