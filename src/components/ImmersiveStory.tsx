@@ -252,17 +252,29 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
         >
           <div className="v-container v-odyssey-inner">
             <motion.div
-              className="v-odyssey-copy"
-              initial={reduce ? false : { opacity: 0, y: 44, filter: "blur(8px)" }}
-              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              className="v-odyssey-copy-trigger"
+              initial={reduce ? false : "hidden"}
+              whileInView={reduce ? undefined : "visible"}
               viewport={{ once: false, amount: 0.5 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
-              <span className="v-odyssey-eyebrow"><i /><item.icon size={16} />{item.eyebrow}</span>
-              <h2 id={`odyssey-title-${index}`}>{item.title.split("\n").map((line) => <span key={line}>{line}</span>)}</h2>
-              <p>{item.body}</p>
-              <Link to={item.href} className="v-odyssey-link">{item.action}<ArrowUpRight size={18} /></Link>
-              <div className="v-odyssey-mascot"><Bot expression={item.bot} /><span>O VEZZ acompanha você.</span></div>
+              <motion.div
+                className="v-odyssey-copy"
+                variants={{
+                  hidden: { opacity: 0, y: 44, filter: "blur(8px)" },
+                  visible: {
+                    opacity: 1,
+                    y: 0,
+                    filter: "blur(0px)",
+                    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
+                  },
+                }}
+              >
+                <span className="v-odyssey-eyebrow"><i /><item.icon size={16} />{item.eyebrow}</span>
+                <h2 id={`odyssey-title-${index}`}>{item.title.split("\n").map((line) => <span key={line}>{line}</span>)}</h2>
+                <p>{item.body}</p>
+                <Link to={item.href} className="v-odyssey-link">{item.action}<ArrowUpRight size={18} /></Link>
+                <div className="v-odyssey-mascot"><Bot expression={item.bot} /><span>O VEZZ acompanha você.</span></div>
+              </motion.div>
             </motion.div>
             <div className="v-odyssey-scene-caption" aria-hidden="true">
               <span>VEZZ / jornada do cuidado</span><strong>0{index + 1}</strong>

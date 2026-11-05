@@ -3462,8 +3462,11 @@ h2:focus {
   align-items: center;
   min-height: min(690px, calc(100svh - 190px));
 }
-.v-odyssey-copy {
+.v-odyssey-copy-trigger {
   width: min(48%, 610px);
+}
+.v-odyssey-copy {
+  width: 100%;
   padding-block: 20px;
   text-shadow: 0 4px 30px #061b4f65;
 }
@@ -3575,7 +3578,7 @@ h2:focus {
 @media (max-width: 959px) {
   .v-odyssey { --odyssey-offset: 76px; }
   .v-odyssey-rail { width: calc(100% - 48px); }
-  .v-odyssey-copy { width: 53%; }
+  .v-odyssey-copy-trigger { width: 53%; }
   .v-odyssey-copy h2 { font-size: clamp(44px, 7vw, 72px); }
   .v-odyssey-fallback { left: 43%; width: 57vw; }
   .v-odyssey-fallback i { width: min(50vw, 480px); }
@@ -3614,9 +3617,11 @@ h2:focus {
     min-height: 0;
     align-items: flex-start;
   }
-  .v-odyssey-copy {
+  .v-odyssey-copy-trigger {
     width: 100%;
     max-width: 560px;
+  }
+  .v-odyssey-copy {
     padding-top: 24px;
   }
   .v-odyssey-copy h2 {
