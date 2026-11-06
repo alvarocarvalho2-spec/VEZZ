@@ -28,7 +28,7 @@ export async function buildSeed() {
       descricao:
         "Clínica multidisciplinar na Aldeota com foco em clínica geral, cardiologia e check-up. Luz natural, espera silenciosa e fila digital em todos os consultórios.",
       especialidades: ["Clínica Geral", "Cardiologia", "Endocrinologia", "Check-up"],
-      foto: "assets/images/clinic-sol.jpg",
+      foto: "assets/images/clinic-sol.webp",
       horarios: hours(),
       tempo_medio: 18,
     },
@@ -40,7 +40,7 @@ export async function buildSeed() {
       descricao:
         "Instituto de saúde integrativa no Meireles. Dermatologia, nutrição e bem-estar com agenda enxuta e acompanhamento em tempo real.",
       especialidades: ["Dermatologia", "Nutrição", "Psicologia", "Clínica Geral"],
-      foto: "assets/images/clinic-vida.jpg",
+      foto: "assets/images/clinic-vida.webp",
       horarios: hours({ sab: ["08:00-13:00"] }),
       tempo_medio: 20,
     },
@@ -52,7 +52,7 @@ export async function buildSeed() {
       descricao:
         "Centro médico de frente para o mar, no Mucuripe. Ortopedia, fisioterapia e medicina esportiva com gestão de fila para exames e retornos.",
       especialidades: ["Ortopedia", "Fisioterapia", "Medicina Esportiva", "Clínica Geral"],
-      foto: "assets/images/clinic-atlantico.jpg",
+      foto: "assets/images/clinic-atlantico.webp",
       horarios: hours(),
       tempo_medio: 16,
     },
@@ -64,7 +64,7 @@ export async function buildSeed() {
       descricao:
         "Clínica boutique no Cocó, voltada à pediatria e saúde da família. Ambiente jardim e comunicação clara com responsáveis na sala de espera.",
       especialidades: ["Pediatria", "Saúde da Família", "Alergologia", "Clínica Geral"],
-      foto: "assets/images/clinic-harmonia.jpg",
+      foto: "assets/images/clinic-harmonia.webp",
       horarios: hours({ sab: ["08:00-12:00"] }),
       tempo_medio: 22,
     },

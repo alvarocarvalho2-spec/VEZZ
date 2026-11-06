@@ -1,5 +1,5 @@
-# Dados de municípios
+# Origem dos dados geográficos
 
-`municipios-brasileiros.json` contém nomes de municípios e coordenadas centrais usadas para posicionar clínicas no globo. Cada linha tem o formato `[nome, latitude, longitude]`.
+O mapa atual posiciona clínicas pelo estado e mantém as coordenadas dos centros estaduais em `src/hooks/useClinicLocations.ts`. A lista municipal deixou de ser carregada pelo site e foi removida do repositório para evitar manter dados sem uso.
 
-Fonte: [kelvins/municipios-brasileiros](https://github.com/kelvins/municipios-brasileiros), com dados de municípios brasileiros. Os dados foram reduzidos aos campos usados pelo mapa. A licença MIT original está em `MUNICIPIOS-BRASILEIROS-LICENSE.txt`.
+O protótipo anterior usou dados de [kelvins/municipios-brasileiros](https://github.com/kelvins/municipios-brasileiros). A licença MIT original está preservada em `MUNICIPIOS-BRASILEIROS-LICENSE.txt` para manter a atribuição da fonte.

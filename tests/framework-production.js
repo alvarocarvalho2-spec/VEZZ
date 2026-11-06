@@ -10,7 +10,7 @@ async page => {
       const headers={'access-control-allow-origin':'*','access-control-allow-headers':'*','access-control-allow-methods':'GET,POST,PUT,OPTIONS'};
       if(url.pathname==='/auth/v1/user')return route.fulfill({contentType:'application/json',headers,body:JSON.stringify({id:'qa-local',email:'qa@example.test'})});
       if(url.pathname==='/auth/v1/logout')return route.fulfill({status:204,headers});
-      if(url.pathname==='/rest/v1/clinica')return route.fulfill({contentType:'application/json',headers,body:JSON.stringify([{id_clinica:'qa_clinic',nome:'Clínica QA',descricao:'Clínica de teste local',foto:'assets/images/clinic-sol.jpg',especialidades:['Clínica Geral'],endereco:[{bairro:'Aldeota',cidade:'Fortaleza'}]}])});
+      if(url.pathname==='/rest/v1/clinica')return route.fulfill({contentType:'application/json',headers,body:JSON.stringify([{id_clinica:'qa_clinic',nome:'Clínica QA',descricao:'Clínica de teste local',foto:'assets/images/clinic-sol.webp',especialidades:['Clínica Geral'],endereco:[{bairro:'Aldeota',cidade:'Fortaleza'}]}])});
       return route.fulfill({contentType:'application/json',headers,body:'[]'});
     }
     blocked.push(url.hostname);return route.abort();

@@ -218,7 +218,7 @@ function Earth({
   const planet = useRef<Group>(null);
   const rendered = useRef(false);
   const surfaceTexture = useLoader(TextureLoader, earthIllustrationUrl);
-  const { viewport, camera, size } = useThree();
+  const { viewport, camera, size, invalidate } = useThree();
   const mobile = viewport.width < 6;
   const markerPoints = useMemo(() => locations.map((location) => ({
     key: location.key,
@@ -233,11 +233,11 @@ function Earth({
 
   useEffect(() => {
     surfaceTexture.colorSpace = SRGBColorSpace;
-    surfaceTexture.anisotropy = 8;
+    surfaceTexture.anisotropy = 4;
     surfaceTexture.needsUpdate = true;
   }, [surfaceTexture]);
 
-  useFrame(({ clock }, delta) => {
+  useFrame((_, delta) => {
     if (!active || !composition.current || !planet.current) return;
 
     const p = reduceMotion ? 0 : MathUtils.clamp(progress.get(), 0, 1);
@@ -249,7 +249,7 @@ function Earth({
     const targetY = (mobile ? -1.18 : 0.02) + Math.sin(p * Math.PI * 2) * (mobile ? 0.1 : 0.18);
     const baseScale = mobile ? 0.79 : 1.16;
     const targetScale = (baseScale + Math.sin(p * Math.PI) * (mobile ? 0.055 : 0.14)) * globeScale.get();
-    const targetRotationY = -0.68 + p * 1.52 + interaction.current.yaw + Math.sin(clock.elapsedTime * 0.06) * (reduceMotion ? 0 : 0.012);
+    const targetRotationY = -0.68 + p * 1.52 + interaction.current.yaw;
     const targetRotationX = 0.06 + Math.sin(p * Math.PI * 2) * (reduceMotion ? 0 : 0.07) + interaction.current.pitch;
 
     if (reduceMotion) {
@@ -269,6 +269,18 @@ function Earth({
       composition.current.scale.setScalar(targetScale);
       planet.current.rotation.y = MathUtils.damp(planet.current.rotation.y, targetRotationY, 2.4, delta);
       planet.current.rotation.x = MathUtils.damp(planet.current.rotation.x, targetRotationX, 2.4, delta);
+
+      const settlingError = Math.max(
+        Math.abs(camera.position.x - cameraX),
+        Math.abs(camera.position.y - cameraY),
+        Math.abs(camera.position.z - cameraZ),
+        Math.abs(composition.current.position.x - targetX),
+        Math.abs(composition.current.position.y - targetY),
+        Math.abs(composition.current.position.z - Math.sin(p * Math.PI) * 0.16),
+        Math.abs(planet.current.rotation.x - targetRotationX),
+        Math.abs(planet.current.rotation.y - targetRotationY),
+      );
+      if (settlingError > 0.001) invalidate();
     }
 
     camera.updateMatrixWorld();
@@ -386,9 +398,9 @@ export default function ScrollScene({
   return (
     <Canvas
       aria-hidden="true"
-      dpr={[1, 1.5]}
+      dpr={[1, 1.25]}
       camera={{ position: [0, 0, 7.05], fov: 42 }}
-      frameloop={active && !reduceMotion ? "always" : "demand"}
+      frameloop="demand"
       gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
     >
       <Suspense fallback={null}>

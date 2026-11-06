@@ -672,7 +672,7 @@ table.data tr:hover td { background: color-mix(in srgb, var(--teal-mist) 70%, va
   grid-template-columns: 1fr 1fr;
 }
 .auth-visual {
-  background: #061b4f url("../assets/images/hero-clinic.jpg") center/cover;
+  background: #061b4f url("../assets/images/hero-clinic.webp") center/cover;
   background-blend-mode: multiply;
   min-height: 520px;
   color: #eef2fb;

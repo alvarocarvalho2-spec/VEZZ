@@ -111,9 +111,8 @@ export default function ImmersiveStory({ locations }: { locations: MapLocation[]
     return () => observer.disconnect();
   }, []);
 
-  useMotionValueEvent(scrollYProgress, "change", () => {
-    if (reduce) invalidateScene.current?.();
-  });
+  useMotionValueEvent(scrollYProgress, "change", () => invalidateScene.current?.());
+  useMotionValueEvent(globeEntryProgress, "change", () => invalidateScene.current?.());
 
   const Scene = ScrollScene;
   const handleSceneReady = useCallback(() => setSceneReady(true), []);

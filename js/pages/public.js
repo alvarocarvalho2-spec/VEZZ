@@ -260,7 +260,7 @@ export function renderHow(root, { session }) {
         <h1 class="reveal" style="--d:.05s">Uma fila visível é uma fila justa.</h1>
         <p class="reveal" style="--d:.1s">O VEZZ nasceu da espera opaca: senhas de papel, chamadas pelo primeiro nome, ninguém sabe se faltam cinco minutos ou cinquenta. Aqui, cada consulta vira um lugar na fila, com hora, status e estimativa.</p>
         <div class="card reveal" style="overflow:hidden;margin:24px 0;--d:.15s">
-          <img src="assets/images/feature-queue.jpg" alt="Painel digital de fila" style="width:100%;height:280px;object-fit:cover">
+          <img src="assets/images/feature-queue.webp" alt="Painel digital de fila" style="width:100%;height:280px;object-fit:cover">
         </div>
         <h2><span class="q-bot">${bot("calm", "bot-glow")}</span>Para o paciente</h2>
         <p>Cadastre-se com nome, telefone e e-mail. Pesquise clínicas por nome ou bairro. Agende. No dia, abra <em>Minha fila</em> e acompanhe a posição — atualizada automaticamente a cada poucos segundos.</p>

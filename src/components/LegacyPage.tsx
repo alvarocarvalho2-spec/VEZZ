@@ -3,22 +3,23 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { db } from "../../js/lib/db.js";
 import { closeModal } from "../../js/lib/ui.js";
 import { initReveal, stopMotion } from "../../js/lib/motion.js";
-import { stopPatientLive } from "../../js/pages/patient.js";
-import { stopManagerLive } from "../../js/pages/manager.js";
-import { stopScheduleLive, stopHeroDemo } from "../../js/pages/public.js";
 import { escapeHtml } from "../../js/lib/utils.js";
 import type { Session } from "../types";
 
 // Existing business screens own this DOM island; React owns navigation and shell.
 // Keep renderers intact until each screen is migrated to native components.
 export type PageRenderer = (root: HTMLDivElement, context: any) => unknown;
+export type PageLoader = () => Promise<{
+  render: PageRenderer;
+  cleanup?: () => void;
+}>;
 let renderQueue: Promise<unknown> = Promise.resolve();
 export default function LegacyPage({
-  render,
+  loader,
   role,
   principalOnly,
 }: {
-  render: PageRenderer;
+  loader: PageLoader;
   role?: Session["role"];
   principalOnly?: boolean;
 }) {
@@ -29,6 +30,7 @@ export default function LegacyPage({
   useEffect(() => {
     const root = ref.current!;
     let disposed = false;
+    let cleanupPage = () => {};
     const session = db().getSession() as Session | null;
     if (db().getPendingGoogleProfile?.() && location.pathname !== "/cadastro") {
       navigate("/cadastro?oauth=google", { replace: true });
@@ -58,10 +60,8 @@ export default function LegacyPage({
     const app = document.getElementById("app")!;
     app.setAttribute("aria-busy", "true");
     const cleanup = () => {
-      stopPatientLive();
-      stopManagerLive();
-      stopScheduleLive();
-      stopHeroDemo();
+      cleanupPage();
+      cleanupPage = () => {};
       stopMotion();
       closeModal();
     };
@@ -70,7 +70,13 @@ export default function LegacyPage({
       .catch(() => {})
       .then(async () => {
         if (disposed) return;
-        await render(root, {
+        const page = await loader();
+        if (disposed) {
+          page.cleanup?.();
+          return;
+        }
+        cleanupPage = page.cleanup ?? (() => {});
+        await page.render(root, {
           session,
           params,
           query: Object.fromEntries(new URLSearchParams(location.search)),
@@ -101,7 +107,7 @@ export default function LegacyPage({
       app.removeAttribute("aria-busy");
     };
   }, [
-    render,
+    loader,
     role,
     principalOnly,
     location.pathname,

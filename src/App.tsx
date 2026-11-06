@@ -2,38 +2,69 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import { db, initDb } from "../js/lib/db.js";
-import {
-  renderClinic,
-  renderSchedule,
-  renderClinicRequest,
-} from "../js/pages/public.js";
-import {
-  renderLogin,
-  renderRegisterPatient,
-  renderRecover,
-} from "../js/pages/auth.js";
-import {
-  renderPatientHome,
-  renderPatientQueue,
-  renderHistory,
-} from "../js/pages/patient.js";
-import {
-  renderManagerHome,
-  renderQueue,
-  renderAppointments,
-  renderPatients,
-  renderClinicAdmin,
-} from "../js/pages/manager.js";
-import { renderAdmin, renderInvite } from "../js/pages/admin.js";
-import { renderNewManager } from "../js/pages/manager-access.js";
 import { Header, Footer, BottomNav } from "./components/Shell";
-import LegacyPage, { type PageRenderer } from "./components/LegacyPage";
+import type { PageLoader, PageRenderer } from "./components/LegacyPage";
 import Bot from "./components/Bot";
 import type { Session } from "./types";
 const Home = lazy(() => import("./pages/Home"));
 const Clinics = lazy(() => import("./pages/Clinics"));
 const How = lazy(() => import("./pages/How"));
+const LegacyPage = lazy(() => import("./components/LegacyPage"));
 let initialization: ReturnType<typeof initDb> | undefined;
+
+type PublicRenderer = "renderClinic" | "renderSchedule" | "renderClinicRequest";
+type AuthRenderer = "renderLogin" | "renderRegisterPatient" | "renderRecover";
+type PatientRenderer = "renderPatientHome" | "renderPatientQueue" | "renderHistory";
+type ManagerRenderer = "renderManagerHome" | "renderQueue" | "renderAppointments" | "renderPatients" | "renderClinicAdmin";
+type AdminRenderer = "renderAdmin" | "renderInvite";
+
+const loadPublicPage = (name: PublicRenderer): PageLoader => async () => {
+  const pages = await import("../js/pages/public.js");
+  return {
+    render: pages[name] as PageRenderer,
+    cleanup: () => {
+      pages.stopScheduleLive();
+      pages.stopHeroDemo();
+    },
+  };
+};
+const loadAuthPage = (name: AuthRenderer): PageLoader => async () => {
+  const pages = await import("../js/pages/auth.js");
+  return { render: pages[name] as PageRenderer };
+};
+const loadPatientPage = (name: PatientRenderer): PageLoader => async () => {
+  const pages = await import("../js/pages/patient.js");
+  return { render: pages[name] as PageRenderer, cleanup: () => pages.stopPatientLive() };
+};
+const loadManagerPage = (name: ManagerRenderer): PageLoader => async () => {
+  const pages = await import("../js/pages/manager.js");
+  return { render: pages[name] as PageRenderer, cleanup: () => pages.stopManagerLive() };
+};
+const loadAdminPage = (name: AdminRenderer): PageLoader => async () => {
+  const pages = await import("../js/pages/admin.js");
+  return { render: pages[name] as PageRenderer };
+};
+
+const clinicPage = loadPublicPage("renderClinic");
+const schedulePage = loadPublicPage("renderSchedule");
+const clinicRequestPage = loadPublicPage("renderClinicRequest");
+const loginPage = loadAuthPage("renderLogin");
+const patientRegistrationPage = loadAuthPage("renderRegisterPatient");
+const recoveryPage = loadAuthPage("renderRecover");
+const patientHomePage = loadPatientPage("renderPatientHome");
+const patientQueuePage = loadPatientPage("renderPatientQueue");
+const patientHistoryPage = loadPatientPage("renderHistory");
+const managerHomePage = loadManagerPage("renderManagerHome");
+const managerQueuePage = loadManagerPage("renderQueue");
+const managerAppointmentsPage = loadManagerPage("renderAppointments");
+const managerPatientsPage = loadManagerPage("renderPatients");
+const clinicAdminPage = loadManagerPage("renderClinicAdmin");
+const adminPage = loadAdminPage("renderAdmin");
+const invitePage = loadAdminPage("renderInvite");
+const newManagerPage: PageLoader = async () => {
+  const pages = await import("../js/pages/manager-access.js");
+  return { render: pages.renderNewManager as PageRenderer };
+};
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -92,12 +123,12 @@ export default function App() {
     return () => document.removeEventListener("click", skip);
   }, []);
   const page = (
-    render: unknown,
+    loader: PageLoader,
     role?: Session["role"],
     principalOnly = false,
   ) => (
     <LegacyPage
-      render={render as PageRenderer}
+      loader={loader}
       role={role}
       principalOnly={principalOnly}
     />
@@ -133,56 +164,56 @@ export default function App() {
               <Route path="/" element={<Home session={session} />} />
               <Route path="/como-funciona" element={<How />} />
               <Route path="/clinicas" element={<Clinics />} />
-              <Route path="/clinica/:id" element={page(renderClinic)} />
-              <Route path="/agendar/:id" element={page(renderSchedule)} />
-              <Route path="/login" element={page(renderLogin)} />
-              <Route path="/cadastro" element={page(renderRegisterPatient)} />
-              <Route path="/recuperar-senha" element={page(renderRecover)} />
+              <Route path="/clinica/:id" element={page(clinicPage)} />
+              <Route path="/agendar/:id" element={page(schedulePage)} />
+              <Route path="/login" element={page(loginPage)} />
+              <Route path="/cadastro" element={page(patientRegistrationPage)} />
+              <Route path="/recuperar-senha" element={page(recoveryPage)} />
               <Route
                 path="/solicitar-clinica"
-                element={page(renderClinicRequest)}
+                element={page(clinicRequestPage)}
               />
-              <Route path="/convite/:token" element={page(renderInvite)} />
-              <Route path="/admin-vezz" element={page(renderAdmin)} />
+              <Route path="/convite/:token" element={page(invitePage)} />
+              <Route path="/admin-vezz" element={page(adminPage)} />
               <Route
                 path="/paciente"
-                element={page(renderPatientHome, "paciente")}
+                element={page(patientHomePage, "paciente")}
               />
               <Route
                 path="/paciente/fila"
-                element={page(renderPatientQueue, "paciente")}
+                element={page(patientQueuePage, "paciente")}
               />
               <Route
                 path="/paciente/historico"
-                element={page(renderHistory, "paciente")}
+                element={page(patientHistoryPage, "paciente")}
               />
               <Route
                 path="/paciente/consultas"
-                element={page(renderHistory, "paciente")}
+                element={page(patientHistoryPage, "paciente")}
               />
               <Route
                 path="/gestor"
-                element={page(renderManagerHome, "gestor")}
+                element={page(managerHomePage, "gestor")}
               />
               <Route
                 path="/gestor/fila"
-                element={page(renderQueue, "gestor")}
+                element={page(managerQueuePage, "gestor")}
               />
               <Route
                 path="/gestor/consultas"
-                element={page(renderAppointments, "gestor")}
+                element={page(managerAppointmentsPage, "gestor")}
               />
               <Route
                 path="/gestor/pacientes"
-                element={page(renderPatients, "gestor")}
+                element={page(managerPatientsPage, "gestor")}
               />
               <Route
                 path="/gestor/clinica"
-                element={page(renderClinicAdmin, "gestor")}
+                element={page(clinicAdminPage, "gestor")}
               />
               <Route
                 path="/gestor/novo-gestor"
-                element={page(renderNewManager, "gestor", true)}
+                element={page(newManagerPage, "gestor", true)}
               />
               <Route
                 path="*"

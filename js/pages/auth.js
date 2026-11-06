@@ -322,7 +322,7 @@ export async function renderRegisterManager(root) {
            ${field({ name: "cidade", label: "Cidade", value: "Fortaleza" })}
            ${field({ name: "cep", label: "CEP", placeholder: "00000-000" })}
          </div>
-         ${photoUpload({ id: "new-clinic-photo", src: "assets/images/hero-clinic.jpg", label: "Foto da clínica" })}
+         ${photoUpload({ id: "new-clinic-photo", src: "assets/images/hero-clinic.webp", label: "Foto da clínica" })}
        </div>
        <button class="btn btn-lg btn-block auth-submit" type="submit">Cadastrar gestor</button>
        <p><a href="#/">Cancelar</a> · <a href="#/login">Já tenho conta</a></p>
@@ -370,7 +370,7 @@ export async function renderRegisterManager(root) {
         cidade: data.cidade,
         cep: data.cep,
         horarios: DEFAULT_HOURS,
-        foto: novaFoto || "assets/images/hero-clinic.jpg",
+        foto: novaFoto || "assets/images/hero-clinic.webp",
       };
     }
     if (!applyErrors(form, errors)) return;

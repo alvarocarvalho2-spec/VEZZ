@@ -315,7 +315,7 @@ export class LocalAdapter {
       cidade: request.cidade,
       cep: request.cep,
       horarios: DEFAULT_HOURS,
-      foto: "assets/images/hero-clinic.jpg",
+      foto: "assets/images/hero-clinic.webp",
     });
     const salt = this.db.meta.salt || "vezz.local.v1";
     const gestor = { id_gestor: uid("ges"), nome: data.nome.trim(), email: data.email.trim().toLowerCase(), senha: await hashPassword(data.senha, salt), salt, cargo: data.cargo || "Gestor", id_clinica: clinic.id_clinica, foto: "", principal: true };
@@ -360,7 +360,7 @@ export class LocalAdapter {
       telefone: data.telefone,
       descricao: data.descricao || "",
       especialidades: data.especialidades || ["Clínica Geral"],
-      foto: data.foto || "assets/images/hero-clinic.jpg",
+      foto: data.foto || "assets/images/hero-clinic.webp",
       horarios: data.horarios,
       tempo_medio: data.tempo_medio || APP.avgWaitMin,
     };
