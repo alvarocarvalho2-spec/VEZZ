@@ -4,6 +4,7 @@
  */
 import { APP } from "../config.js";
 import { db, onDbChange } from "../lib/db.js";
+import { playSiteAlertSound } from "../lib/notification-sound.js";
 import {
   avatar,
   updateLiveView,
@@ -36,6 +37,7 @@ let unsub = null;
 let poll = null;
 let liveFrame = 0;
 let liveVersion = 0;
+const announcedPatientNotices = new Set();
 
 export function stopPatientLive() {
   liveVersion++;
@@ -45,6 +47,31 @@ export function stopPatientLive() {
   unsub = null;
   if (poll) clearInterval(poll);
   poll = null;
+}
+
+function notifyPatientState(patientId, todayAppointment, queue) {
+  const notices = [];
+  if (todayAppointment) {
+    const key = `day:${patientId}:${todayAppointment.id_consulta}`;
+    if (!announcedPatientNotices.has(key)) {
+      announcedPatientNotices.add(key);
+      notices.push(`Sua consulta na ${todayAppointment.clinica?.nome || "clínica"} é hoje, às ${formatTime(todayAppointment.data_hora)}.`);
+    }
+  }
+  if (queue?.posicao === 3 && queue.consulta.status === "Agendada") {
+    const key = `position-3:${patientId}:${queue.consulta.id_consulta}`;
+    if (!announcedPatientNotices.has(key)) {
+      announcedPatientNotices.add(key);
+      notices.push(`Você chegou à posição 3. Espera estimada: ${formatMinutes(queue.estimativa)}. Acompanhe em tempo real no seu painel.`);
+    }
+  }
+  if (notices.length) {
+    toast(notices.join(" "), "", {
+      href: "#/paciente/fila",
+      label: "Acompanhar minha fila",
+    });
+    void playSiteAlertSound();
+  }
 }
 
 function startLive(render) {
@@ -71,7 +98,7 @@ export async function renderPatientHome(root, { session }) {
   const paint = async (fromPoll = false) => {
     const list = await db().listAppointments({ id_paciente: session.id });
     const queue = await db().getPatientQueue(session.id);
-    const stamp = JSON.stringify({ list, queue });
+    const stamp = JSON.stringify({ list, queue, day: todayISO() });
     if (fromPoll && stamp === last) return;
     last = stamp;
     const upcoming = list.filter((c) => {
@@ -79,6 +106,10 @@ export async function renderPatientHome(root, { session }) {
       return startOfDay(c.data_hora) >= startOfDay(new Date());
     });
     const next = upcoming[0];
+    const todayAppointment = upcoming.find((c) =>
+      startOfDay(c.data_hora).getTime() === startOfDay(new Date()).getTime(),
+    );
+    notifyPatientState(session.id, todayAppointment, queue);
     const hist = list.filter((c) => c.status === "Finalizada" || c.status === "Cancelada").slice().reverse();
 
     updateLiveView(root, `
@@ -208,6 +239,11 @@ export async function renderPatientQueue(root, { session }) {
     const stamp = JSON.stringify(queue);
     if (fromPoll && stamp === last) return;
     last = stamp;
+    const todayAppointment = queue?.consulta &&
+      startOfDay(queue.consulta.data_hora).getTime() === startOfDay(new Date()).getTime()
+      ? queue.consulta
+      : null;
+    notifyPatientState(session.id, todayAppointment, queue);
     updateLiveView(root, `
       ${header(session)}
       <main class="page page-app">

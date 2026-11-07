@@ -398,7 +398,7 @@ export function badge(status) {
   return `<span class="badge ${statusTone(status)}">${escapeHtml(status)}</span>`;
 }
 
-export function toast(message, type = "") {
+export function toast(message, type = "", action = null) {
   const host = activeModal?.el.querySelector(".modal-notices") || document.getElementById("toasts");
   if (!host) return;
   const tones = {
@@ -409,7 +409,7 @@ export function toast(message, type = "") {
   const tone = tones[type] || { title: "Um aviso para você", expression: "calm" };
   const node = el(`<div class="toast ${tones[type] ? type : "info"}" role="${type === "danger" ? "alert" : "status"}" aria-atomic="true">
     <span class="toast-mascot" aria-hidden="true">${bot(tone.expression)}</span>
-    <div class="toast-content"><span class="feedback-brand">VEZZ</span><strong>${tone.title}</strong><p>${escapeHtml(message)}</p></div>
+    <div class="toast-content"><span class="feedback-brand">VEZZ</span><strong>${tone.title}</strong><p>${escapeHtml(message)}</p>${action?.href && action?.label ? `<a class="toast-action" href="${escapeHtml(action.href)}">${escapeHtml(action.label)}</a>` : ""}</div>
     <button type="button" class="toast-close icon-btn" aria-label="Dispensar aviso">${icon("close")}</button>
   </div>`);
   let timer, exitTimer, remaining = type === "danger" ? 9000 : 6500, started = 0, closing = false, paused = true;
@@ -428,6 +428,7 @@ export function toast(message, type = "") {
     clearTimeout(timer); paused = false; started = performance.now(); timer = setTimeout(close, remaining);
   };
   node.querySelector("button").addEventListener("click", close);
+  node.querySelector(".toast-action")?.addEventListener("click", close);
   node.addEventListener("pointerenter", pause); node.addEventListener("pointerleave", resume);
   node.addEventListener("focusin", pause); node.addEventListener("focusout", () => queueMicrotask(resume));
   // Keep small screens readable; notices removed early also release their timers.

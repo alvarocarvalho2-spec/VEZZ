@@ -5,6 +5,8 @@ import { db, initDb } from "../js/lib/db.js";
 import { Header, Footer, BottomNav } from "./components/Shell";
 import type { PageLoader, PageRenderer } from "./components/LegacyPage";
 import Bot from "./components/Bot";
+import AssistantChat from "./components/AssistantChat";
+import { primeSiteAlertSound } from "../js/lib/notification-sound.js";
 import type { Session } from "./types";
 const Home = lazy(() => import("./pages/Home"));
 const Clinics = lazy(() => import("./pages/Clinics"));
@@ -73,6 +75,17 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
+  useEffect(() => {
+    const unlockAudio = () => {
+      void primeSiteAlertSound();
+    };
+    document.addEventListener("pointerdown", unlockAudio, { passive: true });
+    document.addEventListener("keydown", unlockAudio);
+    return () => {
+      document.removeEventListener("pointerdown", unlockAudio);
+      document.removeEventListener("keydown", unlockAudio);
+    };
+  }, []);
   const isAuthRoute = [
     "/login",
     "/cadastro",
@@ -234,6 +247,7 @@ export default function App() {
       )}
       {!isAuthRoute && <Footer />}
       {!isAuthRoute && <BottomNav session={session} />}
+      {ready && !isAuthRoute && <AssistantChat session={session} />}
     </div>
   );
 }
