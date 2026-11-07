@@ -4831,14 +4831,107 @@ dialog.v-clinic-location-dialog::backdrop {
   outline-offset: 3px;
   border-radius: 3px;
 }
+#toasts.has-priority-toast {
+  top: calc(18px + env(safe-area-inset-top, 0px));
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: min(620px, calc(100vw - 28px));
+  align-items: stretch;
+  transform: translateX(-50%);
+  z-index: 120;
+}
+.toast.toast-priority {
+  grid-template-columns: 56px minmax(0, 1fr) 40px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding: 17px 18px;
+  border: 1px solid #78dcef;
+  border-left: 6px solid #78dcef;
+  border-radius: 18px;
+  background: linear-gradient(125deg, #061b4f 0%, #0b3b8f 100%);
+  color: #fff;
+  box-shadow: 0 18px 46px #061b4f52, 0 0 0 5px #75d5ed30;
+  animation: siteAlertEnter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.toast.toast-priority .toast-mascot {
+  width: 54px;
+  height: 54px;
+}
+.toast.toast-priority .toast-mascot .bot {
+  --bot-size: 52px;
+}
+.toast.toast-priority .toast-content .feedback-brand {
+  color: #a8edfb;
+  font-size: 11px;
+  font-weight: 700;
+}
+.toast.toast-priority .toast-content strong {
+  color: #fff;
+  font-size: 18px;
+  line-height: 1.25;
+}
+.toast.toast-priority .toast-content p {
+  color: #eff7ff;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.toast.toast-priority .toast-action {
+  color: #9beeff;
+  font-size: 14px;
+}
+.toast.toast-priority .toast-close {
+  color: #fff;
+  border-color: #ffffff70;
+  background: #ffffff14;
+}
+.toast.toast-priority .toast-close:hover {
+  background: #ffffff28;
+}
+@keyframes siteAlertEnter {
+  from { opacity: 0; transform: translateY(-12px) scale(0.975); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast.toast-priority.out {
+  animation: toastOut 180ms ease forwards;
+}
 
 /* Chat de ajuda local ao VEZZ: respostas guiadas, sem serviços externos. */
 .vezz-assistant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   position: fixed;
   z-index: 80;
   right: 22px;
   bottom: 22px;
   font-family: inherit;
+}
+.vezz-alert-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid #0b3b8f;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--v-royal);
+  box-shadow: 0 10px 28px #061b4f20;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.vezz-alert-sound-toggle:hover,
+.vezz-alert-sound-toggle.is-ready {
+  background: #eaf7fb;
+}
+.vezz-alert-sound-toggle:focus-visible {
+  outline: 3px solid #75d5ed;
+  outline-offset: 3px;
 }
 .vezz-assistant.has-account {
   bottom: calc(86px + env(safe-area-inset-bottom, 0px));
@@ -5110,6 +5203,11 @@ dialog.v-clinic-location-dialog::backdrop {
   .vezz-assistant-launcher {
     min-width: 102px;
     min-height: 48px;
+  }
+  .vezz-alert-sound-toggle {
+    min-height: 46px;
+    padding-inline: 10px;
+    font-size: 12px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

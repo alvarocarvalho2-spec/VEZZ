@@ -66,11 +66,13 @@ function notifyPatientState(patientId, todayAppointment, queue) {
     }
   }
   if (notices.length) {
-    toast(notices.join(" "), "", {
+    playSiteAlertSound();
+    toast(notices.join(" "), "warn", {
+      priority: true,
+      title: "Atualização do seu atendimento",
       href: "#/paciente/fila",
       label: "Acompanhar minha fila",
     });
-    void playSiteAlertSound();
   }
 }
 

@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { db } from "../../js/lib/db.js";
 import {
   isSiteAlertSoundEnabled,
+  isSiteAlertSoundReady,
   playSiteAlertSound,
   primeSiteAlertSound,
   setSiteAlertSoundEnabled,
@@ -201,6 +202,7 @@ export default function AssistantChat({ session }: { session: Session | null }) 
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(isSiteAlertSoundEnabled);
+  const [soundReady, setSoundReady] = useState(isSiteAlertSoundReady);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: 0, author: "assistant", text: welcome },
   ]);
@@ -209,6 +211,12 @@ export default function AssistantChat({ session }: { session: Session | null }) 
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    const updateReady = () => setSoundReady(true);
+    window.addEventListener("vezz:alert-sound-ready", updateReady);
+    return () => window.removeEventListener("vezz:alert-sound-ready", updateReady);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -270,15 +278,17 @@ export default function AssistantChat({ session }: { session: Session | null }) 
     void send(draft);
   }
 
-  function toggleSound() {
-    const next = !soundEnabled;
-    setSoundEnabled(next);
-    setSiteAlertSoundEnabled(next);
-    if (next) {
-      void primeSiteAlertSound().then((ready: boolean) => {
-        if (ready) void playSiteAlertSound();
-      });
+  async function toggleSound() {
+    if (soundEnabled && soundReady) {
+      setSoundEnabled(false);
+      setSiteAlertSoundEnabled(false);
+      return;
     }
+    setSoundEnabled(true);
+    setSiteAlertSoundEnabled(true);
+    const ready = await primeSiteAlertSound();
+    setSoundReady(ready);
+    if (ready) playSiteAlertSound();
   }
 
   const shortcuts = session?.role === "paciente"
@@ -306,16 +316,6 @@ export default function AssistantChat({ session }: { session: Session | null }) 
                 <strong>Assistente VEZZ</strong>
                 <span>Ajuda para consultas e filas</span>
               </div>
-              <button
-                className="vezz-assistant-close"
-                type="button"
-                aria-label={soundEnabled ? "Silenciar avisos sonoros" : "Ativar avisos sonoros"}
-                aria-pressed={soundEnabled}
-                title={soundEnabled ? "Som dos avisos ligado" : "Som dos avisos desligado"}
-                onClick={toggleSound}
-              >
-                {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-              </button>
               <button
                 className="vezz-assistant-close"
                 type="button"
@@ -385,6 +385,19 @@ export default function AssistantChat({ session }: { session: Session | null }) 
         )}
       </AnimatePresence>
 
+      {session?.role === "paciente" && (
+        <button
+          className={`vezz-alert-sound-toggle ${soundEnabled && soundReady ? "is-ready" : ""}`}
+          type="button"
+          aria-label={soundEnabled && soundReady ? "Silenciar avisos sonoros" : "Ativar som dos avisos"}
+          aria-pressed={soundEnabled && soundReady}
+          title={soundEnabled && soundReady ? "Silenciar avisos sonoros" : "Ativar som dos avisos"}
+          onClick={() => void toggleSound()}
+        >
+          {soundEnabled && soundReady ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          <span>{soundEnabled && soundReady ? "Som ligado" : "Ativar som"}</span>
+        </button>
+      )}
       <button
         ref={launcherRef}
         className={`vezz-assistant-launcher ${open ? "is-open" : ""}`}

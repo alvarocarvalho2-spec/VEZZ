@@ -407,9 +407,12 @@ export function toast(message, type = "", action = null) {
     danger: { title: "Não foi possível concluir", expression: "worried" },
   };
   const tone = tones[type] || { title: "Um aviso para você", expression: "calm" };
-  const node = el(`<div class="toast ${tones[type] ? type : "info"}" role="${type === "danger" ? "alert" : "status"}" aria-atomic="true">
+  const priority = action?.priority === true;
+  const globalPriority = priority && host.id === "toasts";
+  const title = action?.title || tone.title;
+  const node = el(`<div class="toast ${tones[type] ? type : "info"}${priority ? " toast-priority" : ""}" role="${type === "danger" ? "alert" : "status"}" aria-atomic="true">
     <span class="toast-mascot" aria-hidden="true">${bot(tone.expression)}</span>
-    <div class="toast-content"><span class="feedback-brand">VEZZ</span><strong>${tone.title}</strong><p>${escapeHtml(message)}</p>${action?.href && action?.label ? `<a class="toast-action" href="${escapeHtml(action.href)}">${escapeHtml(action.label)}</a>` : ""}</div>
+    <div class="toast-content"><span class="feedback-brand">VEZZ</span><strong>${escapeHtml(title)}</strong><p>${escapeHtml(message)}</p>${action?.href && action?.label ? `<a class="toast-action" href="${escapeHtml(action.href)}">${escapeHtml(action.label)}</a>` : ""}</div>
     <button type="button" class="toast-close icon-btn" aria-label="Dispensar aviso">${icon("close")}</button>
   </div>`);
   let timer, exitTimer, remaining = type === "danger" ? 9000 : 6500, started = 0, closing = false, paused = true;
@@ -417,7 +420,11 @@ export function toast(message, type = "", action = null) {
     if (closing) return;
     closing = true; clearTimeout(timer);
     node.classList.add("out");
-    exitTimer = setTimeout(() => node.remove(), matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 200);
+    exitTimer = setTimeout(removeNode, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 200);
+  };
+  const removeNode = () => {
+    node.remove();
+    if (globalPriority && !host.querySelector(".toast-priority")) host.classList.remove("has-priority-toast");
   };
   const pause = () => {
     if (paused || closing) return;
@@ -433,8 +440,13 @@ export function toast(message, type = "", action = null) {
   node.addEventListener("focusin", pause); node.addEventListener("focusout", () => queueMicrotask(resume));
   // Keep small screens readable; notices removed early also release their timers.
   const limit = matchMedia("(max-width: 680px)").matches ? 1 : 3;
-  while (host.children.length >= limit) host.firstElementChild?.dispatchEvent(new Event("dismiss"));
-  node.addEventListener("dismiss", () => { clearTimeout(timer); clearTimeout(exitTimer); closing = true; node.remove(); });
+  if (globalPriority) {
+    while (host.firstElementChild) host.firstElementChild.dispatchEvent(new Event("dismiss"));
+    host.classList.add("has-priority-toast");
+  } else {
+    while (host.children.length >= limit) host.firstElementChild?.dispatchEvent(new Event("dismiss"));
+  }
+  node.addEventListener("dismiss", () => { clearTimeout(timer); clearTimeout(exitTimer); closing = true; removeNode(); });
   host.appendChild(node);
   resume();
   return close;

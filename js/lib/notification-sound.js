@@ -21,6 +21,10 @@ export function setSiteAlertSoundEnabled(enabled) {
   }
 }
 
+export function isSiteAlertSoundReady() {
+  return audioContext?.state === "running";
+}
+
 function getAudioContext() {
   if (audioContext) return audioContext;
   if (typeof window === "undefined") return null;
@@ -38,21 +42,24 @@ export function primeSiteAlertSound() {
   if (!isSiteAlertSoundEnabled()) return Promise.resolve(false);
   const context = getAudioContext();
   if (!context) return Promise.resolve(false);
+  const reportReady = () => {
+    const ready = context.state === "running";
+    if (ready) window.dispatchEvent(new Event("vezz:alert-sound-ready"));
+    return ready;
+  };
   try {
-    const resumed = context.state === "suspended" ? context.resume() : Promise.resolve();
-    return resumed.then(() => context.state === "running").catch(() => false);
+    if (context.state === "running") return Promise.resolve(reportReady());
+    return context.resume().then(reportReady).catch(() => false);
   } catch {
     return Promise.resolve(false);
   }
 }
 
-export async function playSiteAlertSound() {
+export function playSiteAlertSound() {
   if (!isSiteAlertSoundEnabled()) return false;
   const context = getAudioContext();
-  if (!context) return false;
+  if (!context || context.state !== "running") return false;
   try {
-    if (context.state !== "running") await context.resume();
-    if (context.state !== "running") return false;
     const now = context.currentTime;
     [784, 988].forEach((frequency, index) => {
       const start = now + index * 0.14;
