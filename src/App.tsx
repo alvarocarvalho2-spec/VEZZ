@@ -245,7 +245,7 @@ export default function App() {
           </Suspense>
         </motion.div>
       )}
-      {!isAuthRoute && <Footer />}
+      {!isAuthRoute && <Footer session={session} />}
       {!isAuthRoute && <BottomNav session={session} />}
       {ready && !isAuthRoute && <AssistantChat session={session} />}
     </div>

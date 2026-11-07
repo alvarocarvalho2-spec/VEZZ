@@ -2850,7 +2850,9 @@ h2:focus {
     flex-basis: 100%;
   }
   .v-footer-bottom > a {
-    margin-left: auto;
+    order: 2;
+    flex-basis: 100%;
+    margin-left: 0;
   }
   .v-bottom-nav {
     padding: 7px 5px max(7px, env(safe-area-inset-bottom));
@@ -5058,7 +5060,10 @@ dialog.v-clinic-location-dialog::backdrop {
 .vezz-chat-message.is-user {
   align-self: flex-end;
   border-radius: 15px 15px 4px 15px;
-  background: var(--v-royal);
+  background: #0b3b8f;
+  color: #fff;
+}
+.vezz-chat-message.is-user p {
   color: #fff;
 }
 .vezz-chat-message p {

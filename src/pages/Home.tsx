@@ -148,7 +148,7 @@ export default function Home({ session }: { session: Session | null }) {
           >
             Descubra um novo ritmo <ArrowDown size={17} />
           </a>
-          <span className="v-hero-location">Fortaleza, CE</span>
+          <span className="v-hero-location">Pereiro, CE</span>
         </div>
       </section>
       <motion.section

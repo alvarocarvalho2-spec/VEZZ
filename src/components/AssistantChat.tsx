@@ -21,19 +21,228 @@ type ChatMessage = {
   text: string;
   actions?: ChatAction[];
 };
+type ChatRole = Session["role"] | "public";
+type FaqEntry = {
+  terms: string[];
+  roles?: ChatRole[];
+  text: string;
+  actions?: ChatAction[];
+  actionsForRole?: Partial<Record<ChatRole, ChatAction[]>>;
+};
 
-const welcome = "Posso ajudar com consultas, fila e dúvidas sobre o VEZZ. Para orientação de saúde, fale com a sua clínica.";
+const welcome = "Posso ajudar com o uso do VEZZ, consultas e fila. Para orientação de saúde, fale com a sua clínica.";
 
 function normalize(text: string) {
   return text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
+const faqStopWords = new Set(["a", "as", "ao", "aos", "com", "da", "das", "de", "do", "dos", "e", "em", "na", "nas", "no", "nos", "o", "os", "para", "por", "que", "um", "uma", "voce"]);
+
 function matches(text: string, terms: string[]) {
-  return terms.some((term) => text.includes(term));
+  const words = new Set(text.split(" "));
+  return terms.some((term) => {
+    const normalizedTerm = normalize(term);
+    if (text.includes(normalizedTerm)) return true;
+    const keywords = normalizedTerm.split(" ").filter((word) => word.length > 2 && !faqStopWords.has(word));
+    return keywords.length > 1 && keywords.every((word) => words.has(word));
+  });
+}
+
+const faqEntries: FaqEntry[] = [
+  {
+    terms: ["o que e o vezz", "para que serve o vezz", "como funciona o vezz", "sobre o vezz"],
+    text: "O VEZZ conecta pacientes e clínicas: você encontra um local, agenda um horário e acompanha a fila no dia da consulta. A equipe da clínica organiza os atendimentos pelo painel.",
+    actions: [{ label: "Ver como funciona", to: "/como-funciona" }],
+  },
+  {
+    terms: ["sintomas", "diagnostico", "orientacao medica", "duvida de saude", "qual remedio", "estou sentindo"],
+    text: "Sou um assistente sobre o uso do VEZZ, não avalio sintomas nem substituo um profissional de saúde. Para dúvidas clínicas, fale diretamente com a sua clínica. Em uma urgência, procure um serviço de emergência.",
+    roles: ["public", "paciente"],
+  },
+  {
+    terms: ["voce consegue agendar", "pode agendar por mim", "marcar por mim", "cancelar por mim", "voce altera minha consulta", "fazer pelo chat"],
+    text: "Por aqui eu explico e consulto informações disponíveis, mas não crio, cancelo nem altero consultas. Use os controles do VEZZ para concluir essas ações.",
+    roles: ["public", "paciente", "gestor"],
+  },
+  {
+    terms: ["pesquisar sem cadastro", "buscar sem cadastro", "preciso de conta para pesquisar", "preciso me cadastrar para encontrar", "ver clinicas sem conta"],
+    text: "Não. Você pode pesquisar clínicas, especialidades e localização sem entrar. Para agendar, será necessário acessar uma conta VEZZ.",
+    roles: ["public", "paciente"],
+    actions: [{ label: "Encontrar clínicas", to: "/clinicas" }],
+  },
+  {
+    terms: ["preciso de conta para agendar", "preciso criar conta para agendar", "precisa estar logado para marcar", "agendar sem conta"],
+    text: "Você consegue pesquisar sem cadastro, mas precisa entrar ou criar uma conta VEZZ para confirmar um agendamento.",
+    roles: ["public"],
+    actions: [
+      { label: "Entrar", to: "/login" },
+      { label: "Criar conta", to: "/cadastro" },
+    ],
+  },
+  {
+    terms: ["preciso de conta para agendar", "preciso criar conta para agendar", "precisa estar logado para marcar", "agendar sem conta"],
+    text: "Sim, é preciso estar conectado para agendar. Você já está na sua conta; escolha uma clínica e um horário disponível para continuar.",
+    roles: ["paciente"],
+    actions: [{ label: "Encontrar clínicas", to: "/clinicas" }],
+  },
+  {
+    terms: ["como encontrar clinica", "como buscar clinica", "pesquisar clinica", "buscar por especialidade", "buscar por bairro", "buscar por cidade", "clinicas perto"],
+    text: "Na busca de clínicas, procure pelo nome, especialidade ou localização. Abra uma clínica para conferir os dados, horários e opções disponíveis.",
+    roles: ["public", "paciente"],
+    actions: [{ label: "Buscar clínicas", to: "/clinicas" }],
+  },
+  {
+    terms: ["como agendar", "agendar consulta", "marcar consulta", "marcar horario", "fazer agendamento"],
+    text: "Escolha uma clínica, selecione um horário livre e confirme o agendamento. Se ainda não tiver uma conta, crie uma antes de concluir.",
+    roles: ["public", "paciente"],
+    actions: [{ label: "Escolher clínica", to: "/clinicas" }],
+  },
+  {
+    terms: ["nao aparece horario", "sem horario disponivel", "horario ocupado", "clinica nao atende", "nao consigo agendar", "horarios livres"],
+    text: "Os horários dependem do funcionamento da clínica e das vagas ainda livres. Tente outra data ou consulte outra clínica. Um horário pode ser ocupado enquanto você está escolhendo.",
+    roles: ["public", "paciente"],
+    actions: [{ label: "Buscar outra opção", to: "/clinicas" }],
+  },
+  {
+    terms: ["endereco da clinica", "telefone da clinica", "horario da clinica", "onde fica a clinica", "como falar com a clinica", "contato da clinica"],
+    text: "Abra a página da clínica para consultar endereço, telefone, horários de funcionamento e especialidades. As opções de agendamento também aparecem por lá.",
+    roles: ["public", "paciente"],
+    actions: [{ label: "Encontrar clínicas", to: "/clinicas" }],
+  },
+  {
+    terms: ["onde vejo minhas consultas", "ver historico de consultas", "consultas antigas", "consulta cancelada", "status do agendamento", "minha consulta foi confirmada"],
+    text: "Consulte suas consultas e seus status no painel do paciente. Consultas agendadas podem ser canceladas ou reagendadas por ali.",
+    roles: ["paciente"],
+    actions: [{ label: "Abrir minhas consultas", to: "/paciente/historico" }],
+  },
+  {
+    terms: ["como cancelar consulta", "cancelar consulta", "como cancelar", "como cancelo", "como reagendar consulta", "reagendar consulta", "remarcar consulta", "trocar horario da consulta", "mudar data da consulta"],
+    text: "No painel, abra suas consultas e escolha cancelar ou reagendar. Essas opções aparecem enquanto a consulta estiver agendada; para reagendar, selecione uma data e um horário disponíveis.",
+    roles: ["paciente"],
+    actions: [{ label: "Abrir minhas consultas", to: "/paciente/historico" }],
+  },
+  {
+    terms: ["como cancelar consulta", "cancelar consulta", "como cancelar", "como cancelo", "como reagendar consulta", "reagendar consulta", "remarcar consulta", "trocar horario da consulta"],
+    text: "Entre na sua conta para abrir a lista de consultas. Por lá você pode cancelar ou reagendar uma consulta que ainda esteja agendada.",
+    roles: ["public"],
+    actions: [{ label: "Entrar no VEZZ", to: "/login" }],
+  },
+  {
+    terms: ["esqueci minha senha", "recuperar minha senha", "recuperar senha", "redefinir senha", "nao lembro a senha", "trocar minha senha"],
+    text: "Na tela de entrada, escolha “Esqueci a senha” e informe o e-mail da conta. O VEZZ envia as instruções para esse endereço.",
+    roles: ["public", "paciente", "gestor"],
+    actions: [{ label: "Recuperar senha", to: "/recuperar-senha" }],
+  },
+  {
+    terms: ["como cadastrar clinica", "cadastrar minha clinica", "solicitar cadastro da clinica", "quero colocar minha clinica", "clinica usar o vez"],
+    text: "Envie uma solicitação com os dados da clínica e do responsável. Depois da análise e aprovação, o responsável recebe um convite para configurar o acesso.",
+    actions: [{ label: "Solicitar cadastro", to: "/solicitar-clinica" }],
+  },
+  {
+    terms: ["preco para clinica", "quanto custa para clinica", "plano da clinica", "mensalidade da clinica", "taxa para usar o vezz", "cobranca para clinica"],
+    text: "Não tenho informações confirmadas sobre planos ou valores para clínicas. Envie uma solicitação para manifestar interesse e confirme as condições com a equipe do VEZZ antes de aderir.",
+    roles: ["public", "paciente", "gestor"],
+    actionsForRole: {
+      public: [{ label: "Manifestar interesse", to: "/solicitar-clinica" }],
+      paciente: [{ label: "Manifestar interesse", to: "/solicitar-clinica" }],
+    },
+  },
+  {
+    terms: ["quando entra na fila", "quando entro na fila", "consulta entra na fila", "como funciona a fila", "como entro na fila"],
+    text: "No dia da consulta, o agendamento entra automaticamente na fila da clínica. A posição acompanha os horários marcados e o andamento dos atendimentos.",
+    roles: ["public", "paciente", "gestor"],
+    actions: [{ label: "Como funciona", to: "/como-funciona" }],
+  },
+  {
+    terms: ["estimativa de espera", "tempo de espera e garantido", "horario de atendimento e garantido", "previsao da fila", "quanto demora a fila"],
+    text: "A espera é uma estimativa baseada nas pessoas à sua frente e no tempo médio de atendimento da clínica. Ela pode mudar conforme o ritmo dos atendimentos.",
+    roles: ["public", "paciente"],
+    actionsForRole: {
+      public: [{ label: "Como funciona a fila", to: "/como-funciona" }],
+      paciente: [{ label: "Acompanhar minha fila", to: "/paciente/fila" }],
+    },
+  },
+  {
+    terms: ["estimativa de espera", "tempo de espera e garantido", "previsao da fila", "como calcula a espera"],
+    text: "A estimativa considera quantas pessoas estão à frente e o tempo médio de atendimento configurado para a clínica. Ela é uma referência e pode mudar conforme o ritmo do dia.",
+    roles: ["gestor"],
+    actions: [{ label: "Abrir controle da fila", to: "/gestor/fila" }],
+  },
+  {
+    terms: ["fila atualiza", "atualiza sozinha", "tempo real", "acompanhar a fila", "acompanhar de longe"],
+    text: "Com a tela da fila aberta no VEZZ, a posição e a estimativa são atualizadas automaticamente. Você também pode abrir o painel para acompanhar os dados mais recentes.",
+    roles: ["public", "paciente"],
+    actionsForRole: {
+      public: [{ label: "Entrar para acompanhar", to: "/login" }],
+      paciente: [{ label: "Acompanhar fila", to: "/paciente/fila" }],
+    },
+  },
+  {
+    terms: ["notificacao", "aviso da fila", "avisa quando", "posicao 3", "posicao tres", "som do aviso", "ativar som", "alerta sonoro"],
+    text: "Com o VEZZ aberto, você recebe um aviso no dia da consulta e quando chega à posição 3 da fila. Para ouvir o alerta, clique em “Ativar som” uma vez; o navegador exige essa interação. Os avisos aparecem no site, não por WhatsApp.",
+    roles: ["public", "paciente"],
+    actionsForRole: {
+      public: [{ label: "Entrar no VEZZ", to: "/login" }],
+      paciente: [{ label: "Acompanhar fila", to: "/paciente/fila" }],
+    },
+  },
+  {
+    terms: ["whatsapp", "mensagem no celular", "sms", "aviso fora do site", "notificacao fora do site"],
+    text: "No momento, os avisos de consulta e fila são exibidos dentro do VEZZ. O sistema não envia mensagens por WhatsApp ou SMS.",
+    roles: ["public", "paciente"],
+  },
+  {
+    terms: ["como chamar o proximo", "chamar proximo", "chamar paciente", "iniciar atendimento", "comecar atendimento", "finalizar atendimento", "avancar fila", "atender o proximo"],
+    text: "No controle da fila, use “Chamar próximo” quando não houver atendimento em andamento. Para quem já está na lista, use “Iniciar”; ao terminar, finalize o atendimento ou escolha “Finalizar e chamar próximo”. O chat não executa esses comandos.",
+    roles: ["gestor"],
+    actions: [{ label: "Abrir controle da fila", to: "/gestor/fila" }],
+  },
+  {
+    terms: ["ordem da fila", "como ordena a fila", "quem vem primeiro", "ordem dos pacientes", "prioridade da fila"],
+    text: "A fila considera primeiro o atendimento em andamento e, entre os agendados do dia, os horários da consulta. A posição muda quando os atendimentos avançam.",
+    roles: ["gestor"],
+    actions: [{ label: "Abrir controle da fila", to: "/gestor/fila" }],
+  },
+  {
+    terms: ["onde vejo agenda", "ver agenda da clinica", "consultas marcadas da clinica", "lista de consultas", "consultas futuras"],
+    text: "A área “Agenda” reúne as consultas de hoje e as demais consultas da clínica. Você pode iniciar ou finalizar os atendimentos pela lista.",
+    roles: ["gestor"],
+    actions: [{ label: "Abrir agenda", to: "/gestor/consultas" }],
+  },
+  {
+    terms: ["editar horario da clinica", "editar horarios da clinica", "mudar horario de funcionamento", "alterar dias de atendimento", "configurar agenda da clinica", "horario de funcionamento"],
+    text: "O gestor principal pode editar os dias e intervalos de funcionamento na área “Clínica”. Os intervalos definidos ali determinam os horários oferecidos para agendamento.",
+    roles: ["gestor"],
+    actions: [{ label: "Editar dados da clínica", to: "/gestor/clinica" }],
+  },
+  {
+    terms: ["editar dados da clinica", "alterar telefone da clinica", "trocar foto da clinica", "mudar endereco da clinica", "editar perfil da clinica"],
+    text: "O gestor principal pode atualizar os dados e a foto da clínica. Outros gestores conseguem consultar essas informações, mas não editá-las.",
+    roles: ["gestor"],
+    actions: [{ label: "Ver dados da clínica", to: "/gestor/clinica" }],
+  },
+  {
+    terms: ["adicionar gestor", "cadastrar gestor", "convidar funcionario", "adicionar usuario na clinica", "criar acesso para equipe"],
+    text: "Somente o gestor principal pode cadastrar outro gestor da equipe. A opção fica no painel da clínica.",
+    roles: ["gestor"],
+    actions: [{ label: "Adicionar gestor", to: "/gestor/novo-gestor" }],
+  },
+  {
+    terms: ["lista de pacientes", "ver pacientes da clinica", "contato dos pacientes", "quantas consultas cada paciente"],
+    text: "A área “Pacientes” lista as pessoas que já agendaram nessa clínica e mostra o total de consultas e os contatos cadastrados.",
+    roles: ["gestor"],
+    actions: [{ label: "Abrir pacientes", to: "/gestor/pacientes" }],
+  },
+];
+
+function findFaq(text: string, role: ChatRole) {
+  return faqEntries.find((entry) => (!entry.roles || entry.roles.includes(role)) && matches(text, entry.terms));
 }
 
 function sameOrFutureDay(value: string | Date) {
@@ -69,10 +278,49 @@ function formatWait(minutes: number) {
 
 async function answerQuestion(question: string, session: Session | null): Promise<ChatMessage["text"] | { text: string; actions?: ChatAction[] }> {
   const text = normalize(question);
-  const queueIntent = matches(text, ["fila", "posicao", "espera", "aguard", "minha vez"]);
-  const appointmentIntent = matches(text, ["consulta", "agendamento", "agendar", "marcar", "horario", "reagendar", "cancelar"]);
+  const role: ChatRole = session?.role || "public";
 
-  if (session?.role === "paciente" && queueIntent) {
+  if (!session && matches(text, ["minha consulta", "minhas consultas", "minha fila", "minha posicao", "posicao na fila", "meus agendamentos", "meu historico"])) {
+    return {
+      text: "Entre na sua conta para consultar suas consultas, seu histórico e sua posição na fila.",
+      actions: [{ label: "Entrar no VEZZ", to: "/login" }],
+    };
+  }
+
+  const faq = findFaq(text, role);
+  if (faq) {
+    let actions = faq.actionsForRole?.[role] || faq.actions;
+    if (session?.role === "gestor" && !session.principal) {
+      actions = actions
+        ?.filter((action) => action.to !== "/gestor/novo-gestor")
+        .map((action) => action.to === "/gestor/clinica" && action.label.startsWith("Editar")
+          ? { ...action, label: "Ver dados da clínica" }
+          : action);
+    }
+    return { text: faq.text, actions };
+  }
+
+  const patientQueueIntent = matches(text, [
+    "minha fila", "minha posicao", "posicao fila", "qual minha posicao", "em que posicao estou", "que posicao estou",
+    "posicao atual", "qual meu tempo de espera", "qual minha estimativa", "estimativa da minha fila", "quanto falta",
+    "quanto falta para minha vez", "quanto tempo falta", "quanto vou esperar", "minha vez", "estou em qual posicao",
+    "quem esta atendendo agora",
+  ]);
+  const patientAppointmentIntent = matches(text, [
+    "minha proxima consulta", "proxima consulta", "quando e minha consulta", "que horas e minha consulta",
+    "quando sera minha consulta", "qual horario da consulta", "horario da minha consulta", "consulta de hoje", "minhas consultas",
+    "meus agendamentos", "meu proximo agendamento",
+  ]);
+  const managerQueueIntent = matches(text, [
+    "resumo da fila", "fila atual", "fila agora", "quantos pacientes aguardam", "quantos pacientes na fila",
+    "quantos na fila", "pacientes aguardando", "tem alguem na fila", "quem esta em atendimento", "proximo da fila",
+  ]);
+  const managerAppointmentIntent = matches(text, [
+    "consultas de hoje", "consultas agendadas hoje", "agendamentos de hoje", "agenda de hoje", "quantas consultas hoje",
+    "resumo das consultas de hoje",
+  ]);
+
+  if (session?.role === "paciente" && patientQueueIntent) {
     const queue = await db().getPatientQueue(session.id);
     if (!queue) {
       return {
@@ -92,19 +340,7 @@ async function answerQuestion(question: string, session: Session | null): Promis
     };
   }
 
-  if (session?.role === "paciente" && appointmentIntent) {
-    if (matches(text, ["agendar", "marcar"])) {
-      return {
-        text: "Encontre uma clínica, escolha um horário disponível e confirme seu agendamento por lá.",
-        actions: [{ label: "Encontrar clínica", to: "/clinicas" }],
-      };
-    }
-    if (matches(text, ["cancelar", "reagendar"])) {
-      return {
-        text: "Você pode cancelar ou escolher outro horário na sua lista de consultas.",
-        actions: [{ label: "Ver minhas consultas", to: "/paciente/historico" }],
-      };
-    }
+  if (session?.role === "paciente" && patientAppointmentIntent) {
     const appointments = await db().listAppointments({ id_paciente: session.id });
     const next = appointments.find((item: any) =>
       ["Agendada", "Em Atendimento"].includes(item.status) && sameOrFutureDay(item.data_hora),
@@ -121,7 +357,7 @@ async function answerQuestion(question: string, session: Session | null): Promis
     };
   }
 
-  if (session?.role === "gestor" && queueIntent) {
+  if (session?.role === "gestor" && managerQueueIntent) {
     const queue = await db().getQueue(session.id_clinica);
     const waiting = queue.filter((item: any) => item.status === "Agendada");
     const current = queue.find((item: any) => item.status === "Em Atendimento");
@@ -134,7 +370,7 @@ async function answerQuestion(question: string, session: Session | null): Promis
     };
   }
 
-  if (session?.role === "gestor" && appointmentIntent) {
+  if (session?.role === "gestor" && managerAppointmentIntent) {
     const appointments = await db().listAppointments({
       id_clinica: session.id_clinica,
       day: new Date(),
@@ -147,30 +383,9 @@ async function answerQuestion(question: string, session: Session | null): Promis
     };
   }
 
-  if (matches(text, ["agendar", "marcar", "clinica", "especialidade", "horario livre"])) {
-    return {
-      text: "Pesquise uma clínica por nome, especialidade ou localização e veja os horários disponíveis.",
-      actions: [{ label: "Encontrar clínica", to: "/clinicas" }],
-    };
-  }
-
-  if (matches(text, ["como funciona", "o que e o vez", "sobre o vez", "fila automatica"])) {
-    return {
-      text: "No VEZZ, você encontra clínicas, agenda um horário e acompanha a fila no dia da consulta. O gestor organiza os atendimentos pelo painel.",
-      actions: [{ label: "Como funciona", to: "/como-funciona" }],
-    };
-  }
-
-  if (!session && matches(text, ["minha consulta", "minha fila", "minha posicao", "meus agendamentos"])) {
-    return {
-      text: "Entre na sua conta para consultar suas consultas e sua posição na fila.",
-      actions: [{ label: "Entrar no VEZZ", to: "/login" }],
-    };
-  }
-
   if (session?.role === "gestor") {
     return {
-      text: "Posso resumir a fila ou as consultas de hoje. Para chamar ou atualizar atendimentos, use os controles do painel da clínica.",
+      text: "Posso responder dúvidas sobre a fila, agenda, dados da clínica e equipe. Também posso resumir a fila ou as consultas de hoje; para alterar atendimentos, use os controles do painel.",
       actions: [
         { label: "Ver fila", to: "/gestor/fila" },
         { label: "Ver consultas", to: "/gestor/consultas" },
@@ -180,16 +395,16 @@ async function answerQuestion(question: string, session: Session | null): Promis
 
   if (session?.role === "paciente") {
     return {
-      text: "Posso consultar sua próxima consulta ou sua posição na fila. Também posso levar você à busca de clínicas.",
+      text: "Posso responder dúvidas sobre agendamentos, cancelamentos, avisos e fila. Também consulto sua próxima consulta ou posição atual.",
       actions: [
-        { label: "Minhas consultas", to: "/paciente" },
+        { label: "Minhas consultas", to: "/paciente/historico" },
         { label: "Encontrar clínica", to: "/clinicas" },
       ],
     };
   }
 
   return {
-    text: "Posso explicar como o VEZZ funciona ou ajudar você a encontrar uma clínica. Para consultar uma fila ou agendamento, entre na sua conta.",
+    text: "Posso explicar como o VEZZ funciona, ajudar a encontrar uma clínica e orientar sobre consultas, filas ou cadastro de clínicas. Para consultar informações pessoais, entre na sua conta.",
     actions: [
       { label: "Encontrar clínica", to: "/clinicas" },
       { label: "Entrar", to: "/login" },
@@ -292,10 +507,10 @@ export default function AssistantChat({ session }: { session: Session | null }) 
   }
 
   const shortcuts = session?.role === "paciente"
-    ? ["Minha próxima consulta", "Minha posição na fila"]
+    ? ["Como agendar?", "Como funciona a fila?", "Minha posição na fila"]
     : session?.role === "gestor"
-      ? ["Resumo da fila", "Consultas de hoje"]
-      : ["Como funciona o VEZZ?", "Encontrar clínica"];
+      ? ["Como chamar o próximo?", "Consultas de hoje", "Editar horários da clínica"]
+      : ["Como funciona o VEZZ?", "Preciso de conta para agendar?", "Recuperar minha senha"];
 
   return createPortal(
     <div className={`vezz-assistant ${session ? "has-account" : ""}`}>

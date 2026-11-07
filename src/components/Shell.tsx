@@ -138,7 +138,32 @@ export function Header({ session }: { session: Session | null }) {
   );
 }
 
-export function Footer() {
+export function Footer({ session }: { session: Session | null }) {
+  const links = session?.role === "gestor"
+    ? [
+        { label: "Painel da clínica", to: "/gestor" },
+        { label: "Controle da fila", to: "/gestor/fila" },
+        { label: "Agenda", to: "/gestor/consultas" },
+        { label: "Pacientes", to: "/gestor/pacientes" },
+        { label: "Dados da clínica", to: "/gestor/clinica" },
+        ...(session.principal ? [{ label: "Adicionar gestor", to: "/gestor/novo-gestor" }] : []),
+      ]
+    : session?.role === "paciente"
+      ? [
+          { label: "Meu painel", to: "/paciente" },
+          { label: "Minhas consultas", to: "/paciente/historico" },
+          { label: "Minha fila", to: "/paciente/fila" },
+          { label: "Encontrar clínicas", to: "/clinicas" },
+        ]
+      : session?.role === "admin"
+        ? [{ label: "Painel administrativo", to: "/admin-vezz" }]
+        : [
+            { label: "Encontrar clínicas", to: "/clinicas" },
+            { label: "Como funciona", to: "/como-funciona" },
+            { label: "Cadastre sua clínica", to: "/solicitar-clinica" },
+            { label: "Acessar minha conta", to: "/login" },
+          ];
+
   return (
     <footer className="v-footer">
       <div className="v-container">
@@ -151,17 +176,16 @@ export function Footer() {
             <p>Seu tempo merece cuidado.</p>
           </div>
           <nav aria-label="Rodapé">
-            <Link to="/clinicas">Encontrar clínicas</Link>
-            <Link to="/como-funciona">Como funciona</Link>
-            <Link to="/solicitar-clinica">Cadastre sua clínica</Link>
-            <Link to="/login">Acessar minha conta</Link>
+            {links.map((link) => (
+              <Link key={link.to} to={link.to}>{link.label}</Link>
+            ))}
             <a href="/politica-de-privacidade.html">Política de Privacidade</a>
             <a href="/termos-de-servico.html">Termos de Serviço</a>
           </nav>
         </div>
         <div className="v-footer-bottom">
           <span>© {new Date().getFullYear()} VEZZ</span>
-          <span>De Fortaleza, para cuidar melhor.</span>
+          <span>De Pereiro, CE, para cuidar melhor.</span>
           <a
             href="#app"
             onClick={(event) => {
